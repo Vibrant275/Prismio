@@ -1,7 +1,0 @@
-X:\Prismio\src\codegen\codegen.cpp;X:\Prismio\cmake-build-debug\Prismio.dir\Debug\codegen.obj
-X:\Prismio\src\ir\ir.cpp;X:\Prismio\cmake-build-debug\Prismio.dir\Debug\ir.obj
-X:\Prismio\src\lexer\lexer.cpp;X:\Prismio\cmake-build-debug\Prismio.dir\Debug\lexer.obj
-X:\Prismio\src\main.cpp;X:\Prismio\cmake-build-debug\Prismio.dir\Debug\main.obj
-X:\Prismio\src\parser\parser.cpp;X:\Prismio\cmake-build-debug\Prismio.dir\Debug\parser.obj
-X:\Prismio\src\runtime\runtime.cpp;X:\Prismio\cmake-build-debug\Prismio.dir\Debug\runtime.obj
-X:\Prismio\src\semantic\semantic.cpp;X:\Prismio\cmake-build-debug\Prismio.dir\Debug\semantic.obj

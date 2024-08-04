@@ -1,9 +1,0 @@
-X:/Prismio/cmake-build-debug/CMakeFiles/Prismio.dir
-X:/Prismio/cmake-build-debug/CMakeFiles/ALL_BUILD.dir
-X:/Prismio/cmake-build-debug/CMakeFiles/ZERO_CHECK.dir
-X:/Prismio/cmake-build-debug/src/lexer/CMakeFiles/lexer.dir
-X:/Prismio/cmake-build-debug/src/parser/CMakeFiles/parser.dir
-X:/Prismio/cmake-build-debug/src/semantic/CMakeFiles/semantic.dir
-X:/Prismio/cmake-build-debug/src/ir/CMakeFiles/ir.dir
-X:/Prismio/cmake-build-debug/src/codegen/CMakeFiles/codegen.dir
-X:/Prismio/cmake-build-debug/src/runtime/CMakeFiles/runtime.dir
