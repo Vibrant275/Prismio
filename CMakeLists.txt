@@ -20,7 +20,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Add source files
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.psmi")
 
 # Add subdirectories for modularity
 add_subdirectory(src/lexer)
@@ -33,4 +33,11 @@ add_subdirectory(src/runtime)
 # Add the main executable
 add_executable(Prismio ${SOURCES} "src/main.cpp")
 
-# TODO: Add tests and install targets if needed.
+target_link_libraries(Prismio
+        lexer
+        parser
+        semantic
+        ir
+        codegen
+        runtime
+)

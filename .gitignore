@@ -1,6 +1,7 @@
 # Build directories
 out/
 cmake-build-debug/
+cmake-build-release/
 build/
 bin/
 obj/

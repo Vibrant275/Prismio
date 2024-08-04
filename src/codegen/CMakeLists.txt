@@ -7,7 +7,8 @@ if(NOT CODEGEN_SOURCES)
 endif()
 
 # Add the code generation library
-add_library(codegen ${CODEGEN_SOURCES})
+add_library(codegen ${CODEGEN_SOURCES}
+        codegen.h)
 
 # Include directories for code generation
 target_include_directories(codegen PUBLIC ${CMAKE_SOURCE_DIR}/include)

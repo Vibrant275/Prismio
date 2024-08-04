@@ -1,0 +1,10 @@
+/
+class
+clas MyClass {
+    const int MY_CONST = 10;
+    val int myVar = 5;
+    
+    func void myMethod() {
+        // method body
+    }
+}

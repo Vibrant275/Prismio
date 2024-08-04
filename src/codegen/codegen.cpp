@@ -1,6 +1,11 @@
-// Placeholder for the code generation component
+#include "codegen.h"
 #include <iostream>
 
-void genera() {
-    std::cout << "Code generation logic goes here." << std::endl;
+CodeGenerator::CodeGenerator(const std::string& irCode) : irCode(irCode) {}
+
+void CodeGenerator::generateCode() {
+    // Generate final code from IR
+    std::cout << "Generating code from IR:" << std::endl;
+    std::cout << irCode << std::endl;
+    std::cout << "Code generation complete." << std::endl;
 }
