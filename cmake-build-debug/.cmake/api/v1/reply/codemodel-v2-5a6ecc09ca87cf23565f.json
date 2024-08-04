@@ -1,0 +1,876 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4,
+						5,
+						6
+					],
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				},
+				{
+					"build" : "src/lexer",
+					"jsonFile" : "directory-src.lexer-Debug-8c7702917c54bc7b7874.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/lexer",
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"build" : "src/parser",
+					"jsonFile" : "directory-src.parser-Debug-e1b4ae65dc2227fb8dae.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/parser",
+					"targetIndexes" : 
+					[
+						6
+					]
+				},
+				{
+					"build" : "src/semantic",
+					"jsonFile" : "directory-src.semantic-Debug-56e7484dbe0683865b19.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/semantic",
+					"targetIndexes" : 
+					[
+						8
+					]
+				},
+				{
+					"build" : "src/ir",
+					"jsonFile" : "directory-src.ir-Debug-940d432c98bbb699530f.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/ir",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "src/codegen",
+					"jsonFile" : "directory-src.codegen-Debug-c403a69ea79bb5a1f7f1.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/codegen",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"build" : "src/runtime",
+					"jsonFile" : "directory-src.runtime-Debug-dfd0ec2022d4ec31691b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/runtime",
+					"targetIndexes" : 
+					[
+						7
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6
+					],
+					"name" : "Prismio",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ALL_BUILD::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ALL_BUILD-Debug-213cfcb92c2543cab951.json",
+					"name" : "ALL_BUILD",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Prismio::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Prismio-Debug-4facd78d4fca0a1a89a3.json",
+					"name" : "Prismio",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ZERO_CHECK::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ZERO_CHECK-Debug-9c03f328ef6f418b0ba2.json",
+					"name" : "ZERO_CHECK",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "codegen::@e649d252a4bd824a981b",
+					"jsonFile" : "target-codegen-Debug-e4364341322f2608dd07.json",
+					"name" : "codegen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "ir::@4eed6b510cec9e9c47f0",
+					"jsonFile" : "target-ir-Debug-bb642b8ea4ce63660792.json",
+					"name" : "ir",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "lexer::@fb2aa3322c6159d16365",
+					"jsonFile" : "target-lexer-Debug-89d42f5ac9a1e24f0a27.json",
+					"name" : "lexer",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "parser::@980325688ee7b2ed96bc",
+					"jsonFile" : "target-parser-Debug-fb26ef3b64d162b1e746.json",
+					"name" : "parser",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "runtime::@6e5025570506519f0aff",
+					"jsonFile" : "target-runtime-Debug-37264c699c280fa4f410.json",
+					"name" : "runtime",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "semantic::@821fde91c20962b14cbb",
+					"jsonFile" : "target-semantic-Debug-97b2e1b0278893c9d249.json",
+					"name" : "semantic",
+					"projectIndex" : 0
+				}
+			]
+		},
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4,
+						5,
+						6
+					],
+					"jsonFile" : "directory-.-Release-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				},
+				{
+					"build" : "src/lexer",
+					"jsonFile" : "directory-src.lexer-Release-8c7702917c54bc7b7874.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/lexer",
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"build" : "src/parser",
+					"jsonFile" : "directory-src.parser-Release-e1b4ae65dc2227fb8dae.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/parser",
+					"targetIndexes" : 
+					[
+						6
+					]
+				},
+				{
+					"build" : "src/semantic",
+					"jsonFile" : "directory-src.semantic-Release-56e7484dbe0683865b19.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/semantic",
+					"targetIndexes" : 
+					[
+						8
+					]
+				},
+				{
+					"build" : "src/ir",
+					"jsonFile" : "directory-src.ir-Release-940d432c98bbb699530f.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/ir",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "src/codegen",
+					"jsonFile" : "directory-src.codegen-Release-c403a69ea79bb5a1f7f1.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/codegen",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"build" : "src/runtime",
+					"jsonFile" : "directory-src.runtime-Release-dfd0ec2022d4ec31691b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/runtime",
+					"targetIndexes" : 
+					[
+						7
+					]
+				}
+			],
+			"name" : "Release",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6
+					],
+					"name" : "Prismio",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ALL_BUILD::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ALL_BUILD-Release-213cfcb92c2543cab951.json",
+					"name" : "ALL_BUILD",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Prismio::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Prismio-Release-a450b65cf3a0561ededc.json",
+					"name" : "Prismio",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ZERO_CHECK::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ZERO_CHECK-Release-9c03f328ef6f418b0ba2.json",
+					"name" : "ZERO_CHECK",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "codegen::@e649d252a4bd824a981b",
+					"jsonFile" : "target-codegen-Release-dc042cb86564c6f5a122.json",
+					"name" : "codegen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "ir::@4eed6b510cec9e9c47f0",
+					"jsonFile" : "target-ir-Release-810b5f14394aa9ab4e68.json",
+					"name" : "ir",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "lexer::@fb2aa3322c6159d16365",
+					"jsonFile" : "target-lexer-Release-fc6589d08ea13725dc96.json",
+					"name" : "lexer",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "parser::@980325688ee7b2ed96bc",
+					"jsonFile" : "target-parser-Release-38faa382b8a041613fec.json",
+					"name" : "parser",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "runtime::@6e5025570506519f0aff",
+					"jsonFile" : "target-runtime-Release-5fe41cf1a67598ffc17b.json",
+					"name" : "runtime",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "semantic::@821fde91c20962b14cbb",
+					"jsonFile" : "target-semantic-Release-df665fbffbca014a5d40.json",
+					"name" : "semantic",
+					"projectIndex" : 0
+				}
+			]
+		},
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4,
+						5,
+						6
+					],
+					"jsonFile" : "directory-.-MinSizeRel-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				},
+				{
+					"build" : "src/lexer",
+					"jsonFile" : "directory-src.lexer-MinSizeRel-8c7702917c54bc7b7874.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/lexer",
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"build" : "src/parser",
+					"jsonFile" : "directory-src.parser-MinSizeRel-e1b4ae65dc2227fb8dae.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/parser",
+					"targetIndexes" : 
+					[
+						6
+					]
+				},
+				{
+					"build" : "src/semantic",
+					"jsonFile" : "directory-src.semantic-MinSizeRel-56e7484dbe0683865b19.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/semantic",
+					"targetIndexes" : 
+					[
+						8
+					]
+				},
+				{
+					"build" : "src/ir",
+					"jsonFile" : "directory-src.ir-MinSizeRel-940d432c98bbb699530f.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/ir",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "src/codegen",
+					"jsonFile" : "directory-src.codegen-MinSizeRel-c403a69ea79bb5a1f7f1.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/codegen",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"build" : "src/runtime",
+					"jsonFile" : "directory-src.runtime-MinSizeRel-dfd0ec2022d4ec31691b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/runtime",
+					"targetIndexes" : 
+					[
+						7
+					]
+				}
+			],
+			"name" : "MinSizeRel",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6
+					],
+					"name" : "Prismio",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ALL_BUILD::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ALL_BUILD-MinSizeRel-213cfcb92c2543cab951.json",
+					"name" : "ALL_BUILD",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Prismio::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Prismio-MinSizeRel-5040e56e3ffe0502f596.json",
+					"name" : "Prismio",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ZERO_CHECK::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ZERO_CHECK-MinSizeRel-9c03f328ef6f418b0ba2.json",
+					"name" : "ZERO_CHECK",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "codegen::@e649d252a4bd824a981b",
+					"jsonFile" : "target-codegen-MinSizeRel-115f9aa197b15dcba636.json",
+					"name" : "codegen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "ir::@4eed6b510cec9e9c47f0",
+					"jsonFile" : "target-ir-MinSizeRel-7b488b8ddc304789eb7c.json",
+					"name" : "ir",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "lexer::@fb2aa3322c6159d16365",
+					"jsonFile" : "target-lexer-MinSizeRel-ce2806911265d26e5e50.json",
+					"name" : "lexer",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "parser::@980325688ee7b2ed96bc",
+					"jsonFile" : "target-parser-MinSizeRel-306df83df296f5e8f0d1.json",
+					"name" : "parser",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "runtime::@6e5025570506519f0aff",
+					"jsonFile" : "target-runtime-MinSizeRel-a74a7f2d21aa041e3f7c.json",
+					"name" : "runtime",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "semantic::@821fde91c20962b14cbb",
+					"jsonFile" : "target-semantic-MinSizeRel-b830b99a83b1fe1a58d7.json",
+					"name" : "semantic",
+					"projectIndex" : 0
+				}
+			]
+		},
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4,
+						5,
+						6
+					],
+					"jsonFile" : "directory-.-RelWithDebInfo-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				},
+				{
+					"build" : "src/lexer",
+					"jsonFile" : "directory-src.lexer-RelWithDebInfo-8c7702917c54bc7b7874.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/lexer",
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"build" : "src/parser",
+					"jsonFile" : "directory-src.parser-RelWithDebInfo-e1b4ae65dc2227fb8dae.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/parser",
+					"targetIndexes" : 
+					[
+						6
+					]
+				},
+				{
+					"build" : "src/semantic",
+					"jsonFile" : "directory-src.semantic-RelWithDebInfo-56e7484dbe0683865b19.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/semantic",
+					"targetIndexes" : 
+					[
+						8
+					]
+				},
+				{
+					"build" : "src/ir",
+					"jsonFile" : "directory-src.ir-RelWithDebInfo-940d432c98bbb699530f.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/ir",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "src/codegen",
+					"jsonFile" : "directory-src.codegen-RelWithDebInfo-c403a69ea79bb5a1f7f1.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/codegen",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"build" : "src/runtime",
+					"jsonFile" : "directory-src.runtime-RelWithDebInfo-dfd0ec2022d4ec31691b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/runtime",
+					"targetIndexes" : 
+					[
+						7
+					]
+				}
+			],
+			"name" : "RelWithDebInfo",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6
+					],
+					"name" : "Prismio",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ALL_BUILD::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ALL_BUILD-RelWithDebInfo-213cfcb92c2543cab951.json",
+					"name" : "ALL_BUILD",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Prismio::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Prismio-RelWithDebInfo-ec5289f60e7280396241.json",
+					"name" : "Prismio",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ZERO_CHECK::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ZERO_CHECK-RelWithDebInfo-9c03f328ef6f418b0ba2.json",
+					"name" : "ZERO_CHECK",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "codegen::@e649d252a4bd824a981b",
+					"jsonFile" : "target-codegen-RelWithDebInfo-4eec069ee57436645385.json",
+					"name" : "codegen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "ir::@4eed6b510cec9e9c47f0",
+					"jsonFile" : "target-ir-RelWithDebInfo-03989a4c3b77f23cba59.json",
+					"name" : "ir",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "lexer::@fb2aa3322c6159d16365",
+					"jsonFile" : "target-lexer-RelWithDebInfo-e274e3b6688c75842cfa.json",
+					"name" : "lexer",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "parser::@980325688ee7b2ed96bc",
+					"jsonFile" : "target-parser-RelWithDebInfo-b42b67ed3379cf45137f.json",
+					"name" : "parser",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "runtime::@6e5025570506519f0aff",
+					"jsonFile" : "target-runtime-RelWithDebInfo-2abb6fbd046d8bb4ba4d.json",
+					"name" : "runtime",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "semantic::@821fde91c20962b14cbb",
+					"jsonFile" : "target-semantic-RelWithDebInfo-9a2d2cd0391c7d19e9c1.json",
+					"name" : "semantic",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "X:/Prismio/cmake-build-debug",
+		"source" : "X:/Prismio"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}

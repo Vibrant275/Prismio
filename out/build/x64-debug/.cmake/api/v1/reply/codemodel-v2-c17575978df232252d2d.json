@@ -1,0 +1,213 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4,
+						5,
+						6
+					],
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "src/lexer",
+					"jsonFile" : "directory-src.lexer-Debug-8c7702917c54bc7b7874.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/lexer",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"build" : "src/parser",
+					"jsonFile" : "directory-src.parser-Debug-e1b4ae65dc2227fb8dae.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/parser",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "src/semantic",
+					"jsonFile" : "directory-src.semantic-Debug-56e7484dbe0683865b19.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/semantic",
+					"targetIndexes" : 
+					[
+						6
+					]
+				},
+				{
+					"build" : "src/ir",
+					"jsonFile" : "directory-src.ir-Debug-940d432c98bbb699530f.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/ir",
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
+					"build" : "src/codegen",
+					"jsonFile" : "directory-src.codegen-Debug-c403a69ea79bb5a1f7f1.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/codegen",
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"build" : "src/runtime",
+					"jsonFile" : "directory-src.runtime-Debug-dfd0ec2022d4ec31691b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.8"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src/runtime",
+					"targetIndexes" : 
+					[
+						5
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6
+					],
+					"name" : "Prismio",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "Prismio::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Prismio-Debug-2aa6738a710a9b61fc50.json",
+					"name" : "Prismio",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "codegen::@e649d252a4bd824a981b",
+					"jsonFile" : "target-codegen-Debug-949b56eacf2ebbecdade.json",
+					"name" : "codegen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "ir::@4eed6b510cec9e9c47f0",
+					"jsonFile" : "target-ir-Debug-2a8b45e02689b7dacfd8.json",
+					"name" : "ir",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "lexer::@fb2aa3322c6159d16365",
+					"jsonFile" : "target-lexer-Debug-00be3e9bf579c38f6403.json",
+					"name" : "lexer",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "parser::@980325688ee7b2ed96bc",
+					"jsonFile" : "target-parser-Debug-7c6335abd1a1e2727a36.json",
+					"name" : "parser",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "runtime::@6e5025570506519f0aff",
+					"jsonFile" : "target-runtime-Debug-7f5e2a08a6a19ba20a26.json",
+					"name" : "runtime",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "semantic::@821fde91c20962b14cbb",
+					"jsonFile" : "target-semantic-Debug-4e8c5b15a8b60d2d0ffd.json",
+					"name" : "semantic",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "X:/Prismio/out/build/x64-debug",
+		"source" : "X:/Prismio"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}
