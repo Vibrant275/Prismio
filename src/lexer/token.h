@@ -9,7 +9,7 @@ enum class TokenType {
     NUMBER,
     STRING_LITERAL,
     OPERATOR,
-    PUNCTUATION,
+    SEPERATOR,
     KEYWORD,
     COMMENT,
     WHITESPACE,

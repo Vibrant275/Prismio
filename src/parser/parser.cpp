@@ -88,13 +88,13 @@ ParseNode Parser::parseClass() {
     advance();
 
     // Parse class body
-    expect(TokenType::PUNCTUATION, "{");
+    expect(TokenType::SEPERATOR, "{");
     advance();
 
     ParseNode classNode(Token{TokenType::KEYWORD, "class", currentToken().line});
     classNode.token.value = className;
 
-    while (currentToken().type != TokenType::PUNCTUATION || currentToken().value != "}") {
+    while (currentToken().type != TokenType::SEPERATOR || currentToken().value != "}") {
         if (currentToken().value == "const") {
             classNode.addChild(parseConst());
         } else if (currentToken().value == "val") {
@@ -105,7 +105,7 @@ ParseNode Parser::parseClass() {
             reportError("Unexpected token " + currentToken().value);
         }
     }
-    expect(TokenType::PUNCTUATION, "}");
+    expect(TokenType::SEPERATOR, "}");
     advance();
 
     return classNode;
@@ -120,15 +120,15 @@ ParseNode Parser::parseEnum() {
     advance();
 
     // Parse enum body
-    expect(TokenType::PUNCTUATION, "{");
+    expect(TokenType::SEPERATOR, "{");
     advance();
 
     ParseNode enumNode(enumName);
-    while (currentToken().type != TokenType::PUNCTUATION || currentToken().value != "}") {
+    while (currentToken().type != TokenType::SEPERATOR || currentToken().value != "}") {
         enumNode.addChild(parseStatement());
     }
 
-    expect(TokenType::PUNCTUATION, "}");
+    expect(TokenType::SEPERATOR, "}");
     advance();
 
     return enumNode;
@@ -163,7 +163,7 @@ ParseNode Parser::parseConst() {
     advance();
 
     // Parse semicolon
-    expect(TokenType::PUNCTUATION, ";");
+    expect(TokenType::SEPERATOR, ";");
 
     ParseNode constNode(Token{TokenType::KEYWORD, "const", currentToken().line});
     constNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, type, currentToken().line}));
@@ -196,7 +196,7 @@ ParseNode Parser::parseVar() {
     advance();
 
     // Parse semicolon
-    expect(TokenType::PUNCTUATION, ";");
+    expect(TokenType::SEPERATOR, ";");
 
     ParseNode varNode(Token{TokenType::KEYWORD, "val", currentToken().line});
     varNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, type, currentToken().line}));
@@ -220,20 +220,20 @@ ParseNode Parser::parseMethod() {
     advance();
 
     // Parse parameters
-    expect(TokenType::PUNCTUATION, "(");
+    expect(TokenType::SEPERATOR, "(");
     advance();
 
     // Parameters (simplified)
-    while (currentToken().type != TokenType::PUNCTUATION || currentToken().value != ")") {
+    while (currentToken().type != TokenType::SEPERATOR || currentToken().value != ")") {
         // Parsing parameters (could be extended)
         expect(TokenType::IDENTIFIER, ""); // Expecting an identifier
         advance();
     }
-    expect(TokenType::PUNCTUATION, ")");
+    expect(TokenType::SEPERATOR, ")");
     advance();
 
     // Parse method body
-    expect(TokenType::PUNCTUATION, "{");
+    expect(TokenType::SEPERATOR, "{");
     advance();
 
     // This should handle method body (simplified here)
@@ -241,11 +241,11 @@ ParseNode Parser::parseMethod() {
     methodNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, returnType, currentToken().line}));
     methodNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, methodName, currentToken().line}));
 
-    while (currentToken().type != TokenType::PUNCTUATION || currentToken().value != "}") {
+    while (currentToken().type != TokenType::SEPERATOR || currentToken().value != "}") {
         // Parsing method body (could be extended)
         advance();
     }
-    expect(TokenType::PUNCTUATION, "}");
+    expect(TokenType::SEPERATOR, "}");
     advance();
 
     return methodNode;

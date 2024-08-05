@@ -29,6 +29,8 @@ add_subdirectory(src/semantic)
 add_subdirectory(src/ir)
 add_subdirectory(src/codegen)
 add_subdirectory(src/runtime)
+add_subdirectory(src/keyword)
+add_subdirectory(utils)
 
 # Add the main executable
 add_executable(Prismio ${SOURCES} "src/main.cpp")
@@ -40,4 +42,6 @@ target_link_libraries(Prismio
         ir
         codegen
         runtime
+        utils
+        keyword
 )

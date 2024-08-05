@@ -14,14 +14,14 @@ private:
     void advance();
     char currentChar();
     void skipWhitespace();
-    Token identifier();
+    Token identifierOrKeyword();
     Token number();
     Token operatorToken();
 
     bool forwardSlash();
 
     Token stringLiteral();
-    Token operatorOrPunctuation();
+    Token operatorOrSeperator();
     Token createToken(TokenType type, const std::string& value);
 
     std::string input_;

@@ -1,6 +1,8 @@
 #include <stdexcept>
 #include <iostream>
 #include "Lexer.h"
+#include "../../utils/lexer_utils.h"
+#include "../keyword/keywords.h"
 
 Lexer::Lexer(const std::string &input) : input_(input), lineNumber_(1), columnIndex_(0), currentChar_(input[0]) {}
 
@@ -16,13 +18,33 @@ std::vector<Token> Lexer::tokenize() {
                 tokens.push_back(operatorToken());
             }
         } else if (isalpha(currentChar_) || currentChar_ == '_') {
-            tokens.push_back(identifier());
+            tokens.push_back(identifierOrKeyword());
         } else if (isdigit(currentChar_)) {
             tokens.push_back(number());
         } else if (currentChar_ == '"') {
             tokens.push_back(stringLiteral());
         } else {
-            tokens.push_back(operatorOrPunctuation());
+
+            Token token = operatorOrSeperator();
+
+            if (token.type == TokenType::UNKNOWN) {
+                const std::string redColor = "\033[31m";
+                const std::string resetColor = "\033[0m";
+
+                std::cerr << redColor
+                          << "Error: Unknown token type [ Line: "
+                          << lineNumber_
+                          << " Col: "
+                          << columnIndex_
+                          << " ]" << resetColor
+                          << std::endl;
+
+                exit(1);
+            } else {
+                tokens.push_back(token);
+            }
+
+            advance();
         }
     }
 
@@ -48,30 +70,18 @@ void Lexer::skipWhitespace() {
     }
 }
 
-Token Lexer::identifier() {
-    std::string identifierValue;
+Token Lexer::identifierOrKeyword() {
+    std::string value;
+
     while (isalpha(currentChar_) || isdigit(currentChar_) || currentChar_ == '_') {
-        identifierValue += currentChar_;
+        value += currentChar_;
         advance();
     }
 
-    TokenType type = TokenType::IDENTIFIER;
-    if (identifierValue == "CLASS") {
-        type = TokenType::CLASS;
-    } else if (identifierValue == "ENUM") {
-        type = TokenType::ENUM;
-    } else if (identifierValue == "CONST") {
-        type = TokenType::CONST;
-    } else if (identifierValue == "VAL") {
-        type = TokenType::VAL;
-    }
-    // Add more keyword checks as needed
-
-    Token token;
-    token.type = type;
-    token.value = identifierValue;
-    token.line = lineNumber_;
-    return token;
+    if (isKeyword(value))
+        return createToken(TokenType::KEYWORD, value);
+    else
+        return createToken(TokenType::IDENTIFIER, value);
 }
 
 Token Lexer::number() {
@@ -148,11 +158,13 @@ Token Lexer::stringLiteral() {
     return createToken(TokenType::STRING_LITERAL, value);
 }
 
-Token Lexer::operatorOrPunctuation() {
+Token Lexer::operatorOrSeperator() {
     std::string value;
-    value += currentChar_;
-    advance();
-    return createToken(TokenType::OPERATOR, value);
+    value = currentChar_;
+
+    if (isOperator(currentChar_)) { return createToken(TokenType::OPERATOR, value); }
+    else if (isSeparator(currentChar_)) { return createToken(TokenType::SEPERATOR, value); }
+    else { return createToken(TokenType::UNKNOWN, value); };
 }
 
 Token Lexer::createToken(TokenType type, const std::string &value) {
