@@ -1,14 +1,20 @@
+#include <stdexcept>
+#include <iostream>
 #include "Lexer.h"
 
-Lexer::Lexer(const std::string& input) : input_(input), lineNumber_(1), columnIndex_(0), currentChar_(input[0]) {}
+Lexer::Lexer(const std::string &input) : input_(input), lineNumber_(1), columnIndex_(0), currentChar_(input[0]) {}
 
 std::vector<Token> Lexer::tokenize() {
     std::vector<Token> tokens;
+
     while (currentChar_ != '\0') {
+
         if (isspace(currentChar_)) {
             skipWhitespace();
         } else if (currentChar_ == '/') {
-            skipComment();
+            if (forwardSlash()) {
+                tokens.push_back(operatorToken());
+            }
         } else if (isalpha(currentChar_) || currentChar_ == '_') {
             tokens.push_back(identifier());
         } else if (isdigit(currentChar_)) {
@@ -18,11 +24,10 @@ std::vector<Token> Lexer::tokenize() {
         } else {
             tokens.push_back(operatorOrPunctuation());
         }
-        advance(); // Move to the next character
     }
+
     return tokens;
 }
-
 
 void Lexer::advance() {
     columnIndex_++;
@@ -31,39 +36,17 @@ void Lexer::advance() {
     } else {
         currentChar_ = input_[columnIndex_];
     }
-}
 
-char Lexer::currentChar() {
-    return currentChar_;
 }
 
 void Lexer::skipWhitespace() {
     while (isspace(currentChar_)) {
+        if (currentChar_ == '\n') {
+            lineNumber_++; // Increment lineNumber_ when encountering a newline
+        }
         advance();
     }
 }
-
-void Lexer::skipComment() {
-    advance(); // skip the '/'
-    if (currentChar_ == '/') {
-        // single-line comment
-        while (currentChar_!= '\n' && currentChar_!= '\0') {
-            advance();
-        }
-    } else if (currentChar_ == '*') {
-        // multi-line comment
-        while (true) {
-            advance();
-            if (currentChar_ == '*' && input_[columnIndex_ + 1] == '/') {
-                advance(); // skip the '*'
-                advance(); // skip the '/'
-                break;
-            }
-        }
-    }
-}
-
-int currentLine_ = 1;
 
 Token Lexer::identifier() {
     std::string identifierValue;
@@ -87,7 +70,7 @@ Token Lexer::identifier() {
     Token token;
     token.type = type;
     token.value = identifierValue;
-    token.line = currentLine_; // Assuming you have a currentLine_ variable
+    token.line = lineNumber_;
     return token;
 }
 
@@ -100,13 +83,67 @@ Token Lexer::number() {
     return createToken(TokenType::NUMBER, value);
 }
 
-Token Lexer::stringLiteral() {
+Token Lexer::operatorToken() {
     std::string value;
-    advance(); // skip the opening quote
-    while (currentChar_!= '"') {
+
+    value = input_[columnIndex_ - 1];
+
+    return createToken(TokenType::OPERATOR, value);
+}
+
+bool Lexer::forwardSlash() {
+    std::string value;
+    bool returnValue = false;
+
+    while (currentChar_ == '/') {
         value += currentChar_;
         advance();
     }
+
+    if (value == "//") {
+        // single-line comment
+        while (currentChar_ != '\n')
+            advance();
+
+    } else if (value == "/" && currentChar_ == '*') {
+        // multi-line comment
+        while (true) {
+            advance();
+            if (currentChar_ == '*' && input_[columnIndex_ + 1] == '/') {
+                advance(); // skip the '*'
+                advance(); // skip the '/'
+                break;
+            }
+        }
+    } else if (value == "/") {
+        returnValue = true;
+    } else {
+        createToken(TokenType::STRING_LITERAL, value);
+    }
+
+    return returnValue;
+}
+
+Token Lexer::stringLiteral() {
+    std::string value;
+    advance(); // skip the opening quote
+
+    while (currentChar_ != '"' && currentChar_ != '\0') {
+        value += currentChar_;
+        advance();
+    }
+
+    if (currentChar_ != '"') {
+        const std::string redColor = "\033[31m";
+        const std::string resetColor = "\033[0m";
+
+        std::cerr << redColor << "Error: Unclosed string literal [ Line: " << lineNumber_ << " ]" << resetColor
+                  << std::endl;
+
+        exit(1);
+//        return createToken(TokenType::UNKNOWN, value);
+    }
+
     advance(); // skip the closing quote
     return createToken(TokenType::STRING_LITERAL, value);
 }
@@ -118,6 +155,6 @@ Token Lexer::operatorOrPunctuation() {
     return createToken(TokenType::OPERATOR, value);
 }
 
-Token Lexer::createToken(TokenType type, const std::string& value) {
+Token Lexer::createToken(TokenType type, const std::string &value) {
     return Token(type, value, lineNumber_);
 }

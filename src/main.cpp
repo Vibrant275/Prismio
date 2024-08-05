@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
     // Tokenization
     Lexer lexer(input);
     std::vector<Token> tokens = lexer.tokenize();
-    std::cout << "Tokens generated: " << std::endl;
+    std::cout << "Tokens generated: \n" << std::endl;
 
      for (const auto& token : tokens) {
          std::cout << "Token: " << token.value << std::endl;
