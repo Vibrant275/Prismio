@@ -104,6 +104,7 @@ Token Lexer::operatorToken() {
 bool Lexer::forwardSlash() {
     std::string value;
     bool returnValue = false;
+    bool stringState = false;
 
     while (currentChar_ == '/') {
         value += currentChar_;
@@ -119,10 +120,24 @@ bool Lexer::forwardSlash() {
         // multi-line comment
         while (true) {
             advance();
-            if (currentChar_ == '*' && input_[columnIndex_ + 1] == '/') {
+            if (currentChar_ == '"')
+                stringState = !stringState;
+
+            if (currentChar_ == '*' && input_[columnIndex_ + 1] == '/' && !stringState) {
                 advance(); // skip the '*'
                 advance(); // skip the '/'
                 break;
+            }
+
+            if (currentChar_ == '\0') {
+                const std::string redColor = "\033[31m";
+                const std::string resetColor = "\033[0m";
+
+                std::cerr << redColor << "Syntax error: Expecting a top level declaration. [ */ ] not found"
+                          << resetColor
+                          << std::endl;
+
+                exit(1);
             }
         }
     } else if (value == "/") {
