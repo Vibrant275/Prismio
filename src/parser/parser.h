@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <functional>
 #include "parser_nodes.h" // Make sure this is included correctly
-#include "../lexer/token.h"
+#include "../tokens/token.h"
 
 class Parser {
 public:

@@ -8,7 +8,7 @@ bool SemanticAnalyzer::analyze() {
     std::function<void(const ParseNode&)> analyzeNode = [&](const ParseNode& node) {
         // Check for valid keywords
         if (node.token.value == "clas") {
-            std::cerr << "Error: 'clas' is not a valid keyword, did you mean 'class'?" << std::endl;
+            std::cerr << "Error: 'clas' is not a valid tokens, did you mean 'class'?" << std::endl;
             throw std::runtime_error("Syntax error");
         }
         std::cout << "Analyzing: " << node.token.value << std::endl;

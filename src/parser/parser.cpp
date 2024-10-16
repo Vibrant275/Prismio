@@ -5,7 +5,7 @@
 #include <unordered_set>
 
 Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens), position(0) {
-    // Register keyword handlers
+    // Register tokens handlers
     keywordHandlers["class"] = [this]() { return parseClass(); };
     keywordHandlers["enum"] = [this]() { return parseEnum(); };
 }
@@ -65,7 +65,7 @@ ParseTree Parser::parse() {
         if (it != keywordHandlers.end()) {
             return ParseTree(it->second());
         } else {
-            throw std::runtime_error("Syntax error: Unrecognized keyword '" + current.value + "'");
+            throw std::runtime_error("Syntax error: Unrecognized tokens '" + current.value + "'");
         }
     } else if (current.type == TokenType::CLASS ||
                current.type == TokenType::ENUM ||
@@ -88,13 +88,13 @@ ParseNode Parser::parseClass() {
     advance();
 
     // Parse class body
-    expect(TokenType::SEPERATOR, "{");
+    expect(TokenType::SEPARATOR, "{");
     advance();
 
     ParseNode classNode(Token{TokenType::KEYWORD, "class", currentToken().line});
     classNode.token.value = className;
 
-    while (currentToken().type != TokenType::SEPERATOR || currentToken().value != "}") {
+    while (currentToken().type != TokenType::SEPARATOR || currentToken().value != "}") {
         if (currentToken().value == "const") {
             classNode.addChild(parseConst());
         } else if (currentToken().value == "val") {
@@ -105,7 +105,7 @@ ParseNode Parser::parseClass() {
             reportError("Unexpected token " + currentToken().value);
         }
     }
-    expect(TokenType::SEPERATOR, "}");
+    expect(TokenType::SEPARATOR, "}");
     advance();
 
     return classNode;
@@ -120,15 +120,15 @@ ParseNode Parser::parseEnum() {
     advance();
 
     // Parse enum body
-    expect(TokenType::SEPERATOR, "{");
+    expect(TokenType::SEPARATOR, "{");
     advance();
 
     ParseNode enumNode(enumName);
-    while (currentToken().type != TokenType::SEPERATOR || currentToken().value != "}") {
+    while (currentToken().type != TokenType::SEPARATOR || currentToken().value != "}") {
         enumNode.addChild(parseStatement());
     }
 
-    expect(TokenType::SEPERATOR, "}");
+    expect(TokenType::SEPARATOR, "}");
     advance();
 
     return enumNode;
@@ -163,7 +163,7 @@ ParseNode Parser::parseConst() {
     advance();
 
     // Parse semicolon
-    expect(TokenType::SEPERATOR, ";");
+    expect(TokenType::SEPARATOR, ";");
 
     ParseNode constNode(Token{TokenType::KEYWORD, "const", currentToken().line});
     constNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, type, currentToken().line}));
@@ -196,7 +196,7 @@ ParseNode Parser::parseVar() {
     advance();
 
     // Parse semicolon
-    expect(TokenType::SEPERATOR, ";");
+    expect(TokenType::SEPARATOR, ";");
 
     ParseNode varNode(Token{TokenType::KEYWORD, "val", currentToken().line});
     varNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, type, currentToken().line}));
@@ -220,20 +220,20 @@ ParseNode Parser::parseMethod() {
     advance();
 
     // Parse parameters
-    expect(TokenType::SEPERATOR, "(");
+    expect(TokenType::SEPARATOR, "(");
     advance();
 
     // Parameters (simplified)
-    while (currentToken().type != TokenType::SEPERATOR || currentToken().value != ")") {
+    while (currentToken().type != TokenType::SEPARATOR || currentToken().value != ")") {
         // Parsing parameters (could be extended)
         expect(TokenType::IDENTIFIER, ""); // Expecting an identifier
         advance();
     }
-    expect(TokenType::SEPERATOR, ")");
+    expect(TokenType::SEPARATOR, ")");
     advance();
 
     // Parse method body
-    expect(TokenType::SEPERATOR, "{");
+    expect(TokenType::SEPARATOR, "{");
     advance();
 
     // This should handle method body (simplified here)
@@ -241,11 +241,11 @@ ParseNode Parser::parseMethod() {
     methodNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, returnType, currentToken().line}));
     methodNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, methodName, currentToken().line}));
 
-    while (currentToken().type != TokenType::SEPERATOR || currentToken().value != "}") {
+    while (currentToken().type != TokenType::SEPARATOR || currentToken().value != "}") {
         // Parsing method body (could be extended)
         advance();
     }
-    expect(TokenType::SEPERATOR, "}");
+    expect(TokenType::SEPARATOR, "}");
     advance();
 
     return methodNode;

@@ -1,10 +1,17 @@
 #include <stdexcept>
 #include <iostream>
+#include <format>
 #include "Lexer.h"
-#include "../../utils/lexer_utils.h"
-#include "../keyword/keywords.h"
+#include "../utils/lexer_utils.h"
+#include "../utils/extension.h"
+#include "../tokens/keywords.h"
+#include "../utils/constants.h"
 
 Lexer::Lexer(const std::string &input) : input_(input), lineNumber_(1), columnIndex_(0), currentChar_(input[0]) {}
+
+Token Lexer::createToken(TokenType type, const std::string &value) {
+    return Token(type, value, lineNumber_);
+}
 
 std::vector<Token> Lexer::tokenize() {
     std::vector<Token> tokens;
@@ -14,8 +21,10 @@ std::vector<Token> Lexer::tokenize() {
         if (isspace(currentChar_)) {
             skipWhitespace();
         } else if (currentChar_ == '/') {
-            if (forwardSlash()) {
+            if (isDivisionOperator()) {
+                reverse();
                 tokens.push_back(operatorToken());
+                advance();
             }
         } else if (isalpha(currentChar_) || currentChar_ == '_') {
             tokens.push_back(identifierOrKeyword());
@@ -23,28 +32,24 @@ std::vector<Token> Lexer::tokenize() {
             tokens.push_back(number());
         } else if (currentChar_ == '"') {
             tokens.push_back(stringLiteral());
-        } else {
-
-            Token token = operatorOrSeperator();
-
-            if (token.type == TokenType::UNKNOWN) {
-                const std::string redColor = "\033[31m";
-                const std::string resetColor = "\033[0m";
-
-                std::cerr << redColor
-                          << "Error: Unknown token type [ Line: "
-                          << lineNumber_
-                          << " Col: "
-                          << columnIndex_
-                          << " ]" << resetColor
-                          << std::endl;
-
-                exit(1);
-            } else {
-                tokens.push_back(token);
-            }
-
+        } else if (currentChar_ == '\'') {
+            tokens.push_back(charLiteral());
+        } else if (isSeparator(currentChar_)) {
+            tokens.push_back(separatorToken());
             advance();
+        } else if (isOperator(currentChar_)) {
+            tokens.push_back(operatorToken());
+            advance();
+        } else {
+            std::cerr << redColor
+                      << "Error: Unknown token type [ Line: "
+                      << lineNumber_
+                      << " Col: "
+                      << columnIndex_
+                      << " ]" << resetColor
+                      << std::endl;
+
+            exit(1);
         }
     }
 
@@ -58,7 +63,11 @@ void Lexer::advance() {
     } else {
         currentChar_ = input_[columnIndex_];
     }
+}
 
+void Lexer::reverse() {
+    columnIndex_--;
+    currentChar_ = input_[columnIndex_];
 }
 
 void Lexer::skipWhitespace() {
@@ -96,12 +105,12 @@ Token Lexer::number() {
 Token Lexer::operatorToken() {
     std::string value;
 
-    value = input_[columnIndex_ - 1];
+    value = currentChar_;
 
     return createToken(TokenType::OPERATOR, value);
 }
 
-bool Lexer::forwardSlash() {
+bool Lexer::isDivisionOperator() {
     std::string value;
     bool returnValue = false;
     bool stringState = false;
@@ -143,7 +152,8 @@ bool Lexer::forwardSlash() {
     } else if (value == "/") {
         returnValue = true;
     } else {
-        createToken(TokenType::STRING_LITERAL, value);
+        while (currentChar_ != '\n')
+            advance();
     }
 
     return returnValue;
@@ -159,29 +169,42 @@ Token Lexer::stringLiteral() {
     }
 
     if (currentChar_ != '"') {
-        const std::string redColor = "\033[31m";
-        const std::string resetColor = "\033[0m";
-
-        std::cerr << redColor << "Error: Unclosed string literal [ Line: " << lineNumber_ << " ]" << resetColor
-                  << std::endl;
-
+        std::string error = std::format("Error: Unclosed string literal [ Line:  {}  ]", lineNumber_);
+        displayError(error);
         exit(1);
-//        return createToken(TokenType::UNKNOWN, value);
     }
 
     advance(); // skip the closing quote
     return createToken(TokenType::STRING_LITERAL, value);
 }
 
-Token Lexer::operatorOrSeperator() {
+Token Lexer::separatorToken() {
     std::string value;
     value = currentChar_;
-
-    if (isOperator(currentChar_)) { return createToken(TokenType::OPERATOR, value); }
-    else if (isSeparator(currentChar_)) { return createToken(TokenType::SEPERATOR, value); }
-    else { return createToken(TokenType::UNKNOWN, value); };
+    return createToken(TokenType::SEPARATOR, value);
 }
 
-Token Lexer::createToken(TokenType type, const std::string &value) {
-    return Token(type, value, lineNumber_);
+Token Lexer::charLiteral() {
+    std::string value;
+    advance();
+
+    while (currentChar_ != '\'' && currentChar_ != '\0') {
+        value += currentChar_;
+        advance();
+    }
+
+    if (currentChar_ != '\'') {
+        std::string error = std::format("Error: Unclosed character literal [ Line:  {}  ]", lineNumber_);
+        displayError(error);
+        exit(1);
+    }
+
+    if (value.length() > 1) {
+        std::string error = std::format("Error: Invalid character length [ Line:  {}  ]", lineNumber_);
+        displayError(error);
+        exit(1);
+    }
+
+    advance();
+    return createToken(TokenType::CHAR_LITERAL, value);
 }

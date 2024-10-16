@@ -2,9 +2,7 @@
 #include <string>
 #include "keywords.h"
 
-// Define a list of general keywords
 const std::unordered_set<std::string> generalKeywords = {
-
 
         "null",
 
@@ -44,11 +42,10 @@ const std::unordered_set<std::string> generalKeywords = {
         "continue",
 
         "inout", //Purpose: Indicates that a parameter passed to a function can be modified by the function. The changes to the parameter are reflected outside the function.
-        ""
+
 };
 
 
-// Function to check if a string is a general keyword
 bool isKeyword(const std::string &value) {
     return generalKeywords.find(value) != generalKeywords.end();
 }

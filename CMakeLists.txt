@@ -10,7 +10,7 @@ endif()
 project(Prismio)
 
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Enable export of compile commands
@@ -29,8 +29,8 @@ add_subdirectory(src/semantic)
 add_subdirectory(src/ir)
 add_subdirectory(src/codegen)
 add_subdirectory(src/runtime)
-add_subdirectory(src/keyword)
-add_subdirectory(utils)
+add_subdirectory(src/tokens)
+add_subdirectory(src/utils)
 
 # Add the main executable
 add_executable(Prismio ${SOURCES} "src/main.cpp")

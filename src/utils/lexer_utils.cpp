@@ -1,7 +1,6 @@
 // lexer_utils.cpp
 #include "lexer_utils.h"
 #include <unordered_set>
-
 // Define a set of operator characters
 const std::unordered_set<char> operators = {'+', '-', '*', '/', '=', '<', '>', '!', '&', '|', '%', '^'};
 

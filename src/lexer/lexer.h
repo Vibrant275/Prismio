@@ -3,31 +3,43 @@
 
 #include <vector>
 #include <string>
-#include "Token.h"
+#include "../tokens/token.h"
 
 class Lexer {
 public:
-    Lexer(const std::string& input);
+    Lexer(const std::string &input);
+
     std::vector<Token> tokenize();
 
 private:
     void advance();
+
     char currentChar();
+
     void skipWhitespace();
+
     Token identifierOrKeyword();
+
     Token number();
+
     Token operatorToken();
 
-    bool forwardSlash();
+    bool isDivisionOperator();
 
     Token stringLiteral();
-    Token operatorOrSeperator();
-    Token createToken(TokenType type, const std::string& value);
+
+    Token createToken(TokenType type, const std::string &value);
+
+    Token charLiteral();
+
+    Token separatorToken();
 
     std::string input_;
     int lineNumber_;
     int columnIndex_;
     char currentChar_;
+
+    void reverse();
 };
 
 #endif  // LEXER_H

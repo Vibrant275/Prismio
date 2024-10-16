@@ -7,7 +7,7 @@
 // Define a list of general keywords
 extern const std::unordered_set<std::string> generalKeywords;
 
-// Function to check if a string is a general keyword
+// Function to check if a string is a general tokens
 bool isKeyword(const std::string& value);
 
 #endif // GENERAL_KEYWORDS_H
