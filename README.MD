@@ -1,5 +1,5 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://prism-7.vercel.app/images/Banner.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://prismio-1.vercel.app/images/Banner.png">
   <img src="https://prism-7.vercel.app/images/Banner.png" alt="Prismio logo" height="110">
 </picture> 
 
@@ -31,42 +31,14 @@ Prismio is a high-performance system programming language designed to offer a cl
 
 Explore Prismio and see how it can enhance your development process with its advanced features and seamless C++ integration.
 
-To learn more about Prismio, visit [prismio.org](https://prismio.org/documentation/).
-
-- [Contributing to Prismio](#contributing-to-prismio)
-- [Getting Started](#getting-started)
-  - [Build Failures](#build-failures)
-- [Learning More](#learning-more)
-
-## Contributing to Prismio
-
-We warmly welcome and encourage contributions to Prismio! Please refer to the
-[Contributing to Prismio guide](https://prismio.org/contributing/) for more information.
-
-Before submitting a pull request, ensure you have [tested your changes](https://prismio.org/contributing/)
-and that your contributions adhere to the Prismio project’s [contributing guidelines](https://prismio.org/contributing).
-
-To build a truly outstanding community, [Prismio.org](https://prismio.org/) aims to include
-developers from diverse backgrounds and varying levels of experience. A diverse and welcoming community fosters innovation, brings unique perspectives, and results in high-quality code. We are committed to making the Prismio community a welcoming space for all.
-
-To clearly outline our expectations for members, Prismio follows the Contributor Covenant's code of conduct. This widely recognized document aligns well with our values. For more details, please see our [Code of Conduct](https://prismio.org/code-of-conduct/).
-
-## Getting Started
-
-If you are interested in:
-- Contributing fixes and features to the compiler: See our
-  [How to Submit Your First Pull Request guide](/docs/HowToGuides/FirstPullRequest.md).
-
-We also have an [FAQ](/docs/HowToGuides/FAQ.md) that answers common questions.
+To learn more about Prismio, visit [Prismio](https://prismio-1.vercel.app/).
 
 [Getting Started guide]: /docs/HowToGuides/GettingStarted.md
 
-### Build Failures
+## License
 
-Make sure you have all the necessary [tools required](/docs/HowToGuides/GettingStarted.md#installing-dependencies).
+Prismio is distributed under the terms of the Apache License (Version 2.0).
 
-## Learning More
-
-Be sure to check out the [documentation index](/docs/README.md) for an overview of the available resources. In particular, the documents titled
-[Debugging the Prismio Compiler](docs/DebuggingTheCompiler.md) and
-[Continuous Integration for Prismio](docs/ContinuousIntegration.md) are essential to review before submitting your first pull request.
+## Contributing
+Contributions are always welcome!
+See [Contribution Guide](docs/contributing.md) for ways to get started.
