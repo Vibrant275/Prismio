@@ -26,13 +26,13 @@ int main(int argc, char* argv[]) {
 
     if (argc > 1) {
         std::string filePath = argv[1];
-        if (filePath.find(".psmi") == std::string::npos) {
+        if (filePath.size() < 5 || filePath.substr(filePath.size() - 5) != ".psmi") {
             std::cerr << "Error: File must have a .psmi extension." << std::endl;
             return 1;
         }
         input = readSourceCodeFromFile(filePath);
     } else {
-        std::cerr << "Usage: " << argv[0] << " <source file.psmi>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <source_file.psmi>" << std::endl;
         return 1;
     }
 
