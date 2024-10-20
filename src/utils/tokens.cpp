@@ -1,11 +1,11 @@
 // lexer_utils.cpp
-#include "lexer_utils.h"
+#include "tokens.h"
 #include <unordered_set>
 // Define a set of operator characters
 const std::unordered_set<char> operators = {'+', '-', '*', '/', '=', '<', '>', '!', '&', '|', '%', '^'};
 
 // Define a set of separator characters
-const std::unordered_set<char> separators = {'(', ')', '{', '}', '[', ']', ';', ','};
+const std::unordered_set<char> separators = {'(', ')', '{', '}', '[', ']', ';', ',' ,'.', ':'};
 
 bool isOperator(char c) {
     return operators.find(c) != operators.end();

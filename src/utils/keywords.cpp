@@ -3,7 +3,6 @@
 #include "keywords.h"
 
 const std::unordered_set<std::string> generalKeywords = {
-
         "null",
 
         "true", "false",
@@ -26,11 +25,15 @@ const std::unordered_set<std::string> generalKeywords = {
         "data",
         "sealed",
 
+        // declarations
         "const",
         "var",
 
         // Access Specifier
-        "",
+        "private",
+        "public",
+        "protected",
+        "internal",
 
         // Control Flow
         "if",
@@ -41,11 +44,31 @@ const std::unordered_set<std::string> generalKeywords = {
         "break",
         "continue",
 
-        "inout", //Purpose: Indicates that a parameter passed to a function can be modified by the function. The changes to the parameter are reflected outside the function.
-
+        "inout"
 };
 
+const std::unordered_set<std::string> accessSpecifier = {
+        "private",
+        "public",
+        "protected",
+        "internal",
+};
+
+const std::unordered_set<std::string> declarations = {
+        "var",
+        "const",
+};
 
 bool isKeyword(const std::string &value) {
     return generalKeywords.find(value) != generalKeywords.end();
+}
+bool isAccessSpecifier(const std::string &value) {
+    return accessSpecifier.find(value) != accessSpecifier.end();
+}
+bool isDeclarations(const std::string &value) {
+    return declarations.find(value) != declarations.end();
+}
+
+bool isFunction(const std::string &value) {
+    return value == "fun";
 }

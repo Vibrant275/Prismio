@@ -12,8 +12,6 @@ enum class TokenType {
     OPERATOR,
     SEPARATOR,
     KEYWORD,
-    COMMENT,
-    WHITESPACE,
     UNKNOWN,
     CLASS,
     ENUM,

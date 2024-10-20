@@ -4,20 +4,21 @@
 
 /////////
 
-"String */ Literal"
+ var jgk = "String */ Literal"
+var g = 2
+
+var t : Int = 4
+
+import prismio.lang
+import prismio.math
 
 class
 clas MyClass {
 
-     const MY_CONST = 100
-     val myVar = 5 / 3
-
-// @#$%^&*\|?.
+     const MY_CONST : Int = 10.0
 
     var char = 'a';
 
     func void myMethod() {
         // method body
-
     }
-

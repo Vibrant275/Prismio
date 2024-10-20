@@ -29,7 +29,6 @@ add_subdirectory(src/semantic)
 add_subdirectory(src/ir)
 add_subdirectory(src/codegen)
 add_subdirectory(src/runtime)
-add_subdirectory(src/tokens)
 add_subdirectory(src/utils)
 
 # Add the main executable
@@ -43,5 +42,4 @@ target_link_libraries(Prismio
         codegen
         runtime
         utils
-        keyword
 )

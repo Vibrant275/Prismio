@@ -6,16 +6,19 @@
 #include <unordered_map>
 #include <functional>
 #include "parser_nodes.h" // Make sure this is included correctly
-#include "../tokens/token.h"
+#include "../utils/token.h"
+#include "node.h"
 
 class Parser {
 public:
     Parser(const std::vector<Token>& tokens);
 
-    ParseTree parse();
+    void parse();
 
-    // New method for checking balanced braces
     bool checkBracesBalance();
+
+    void printStructure(ModuleNode& node, std::string indentStr = "");
+
 
 private:
     std::vector<Token> tokens;
@@ -36,6 +39,12 @@ private:
 
     void reportError(const std::string& message);
     bool isValidKeyword(const std::string& value);
+
+    void collectImportStatements();
+
+    void generateAST();
+
+    void handleDeclaration();
 };
 
 #endif // PARSER_H

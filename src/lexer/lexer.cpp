@@ -2,9 +2,9 @@
 #include <iostream>
 #include <format>
 #include "Lexer.h"
-#include "../utils/lexer_utils.h"
+#include "../utils/tokens.h"
 #include "../utils/extension.h"
-#include "../tokens/keywords.h"
+#include "../utils/keywords.h"
 #include "../utils/constants.h"
 
 Lexer::Lexer(const std::string &input) : input_(input), lineNumber_(1), columnIndex_(0), currentChar_(input[0]) {}

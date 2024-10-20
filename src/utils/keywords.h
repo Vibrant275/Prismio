@@ -4,10 +4,12 @@
 #include <string>
 #include <unordered_set>
 
-// Define a list of general keywords
+
 extern const std::unordered_set<std::string> generalKeywords;
 
-// Function to check if a string is a general tokens
 bool isKeyword(const std::string& value);
+bool isAccessSpecifier(const std::string &value);
+bool isDeclarations(const std::string &value);
+bool isFunction(const std::string &value);
 
-#endif // GENERAL_KEYWORDS_H
+#endif
