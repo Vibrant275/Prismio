@@ -1,6 +1,6 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://prismio-1.vercel.app/images/Banner.png">
-  <img src="https://prism-7.vercel.app/images/Banner.png" alt="Prismio logo" height="110">
+  <img src="https://prismio-1.vercel.app/images/Banner.png" alt="Prismio logo" height="110">
 </picture> 
 
 # Prismio Programming Language
