@@ -1,4 +1,3 @@
-//
 #ifndef PRISMIO_CONSTANTS_H
 #define PRISMIO_CONSTANTS_H
 
@@ -11,6 +10,6 @@ const std::string resetColor = "\033[0m";
 // Codes
 const std::string ETLD = "Expecting a top level declaration.";
 const std::string ITLD = "Invalid top level declaration.";
-const std::string ISDB = "Import statements must be declared at the beginning of the file."
+const std::string ISDB = "Import statements must be declared at the beginning of the file.";
 
 #endif
