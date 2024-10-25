@@ -17,8 +17,6 @@ public:
 
     bool checkBracesBalance();
 
-    void printStructure(ModuleNode& node, std::string indentStr = "");
-
 
 private:
     std::vector<Token> tokens;
@@ -37,7 +35,6 @@ private:
     ParseNode parseVar();
     ParseNode parseMethod();
 
-    void reportError(const std::string& message);
     bool isValidKeyword(const std::string& value);
 
     void collectImportStatements();

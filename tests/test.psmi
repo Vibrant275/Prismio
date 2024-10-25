@@ -4,10 +4,12 @@
 
 /////////
 
- var jgk = "String */ Literal"
-var g = 2
+var jgk = "String */ Literal"
+const g = 2
 
-var t : Int = 4
+var t: Bool
+
+// var t: Int->1324~
 
 import prismio.lang
 import prismio.math

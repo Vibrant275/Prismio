@@ -3,6 +3,8 @@
 
 #include "token.h"
 
-void displayError(std::string& error);
-void displayError(std::string , Token errorToken);
+void displayError(const std::string& error);
+void displayError(std::string, Token errorToken);
+
+void displaySuccess(const std::string& message);
 #endif

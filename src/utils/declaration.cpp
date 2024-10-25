@@ -1,3 +1,4 @@
+#include <variant>
 #include "declaration.h"
 
 VariableType getVariableType(const std::string &value) {
@@ -11,6 +12,17 @@ VariableType getVariableType(const std::string &value) {
     }
 }
 
+std::string getVariableTypeValue(const VariableType &variableType) {
+    switch (variableType) {
+        case VariableType::CONST:
+            return "const";
+        case VariableType::VAR:
+            return "var";
+        default:
+            return "Unknown";
+    }
+}
+
 DataType getDataType(const std::string &value) {
     {
         if (value == "Int") {
@@ -19,19 +31,20 @@ DataType getDataType(const std::string &value) {
             return DataType::FLOAT;
         } else if (value == "String") {
             return DataType::STRING;
-        } else if (value == "Boolean") {
+        } else if (value == "Bool") {
             return DataType::BOOLEAN;
         } else if (value == "Char") {
             return DataType::CHAR;
-        } else if (value == "Custom") {
-            return DataType::CUSTOM;
+        } else if (value == "Array") {
+            return DataType::ARRAY;
+        } else {
+            return DataType::IDENTIFIER;
         }
-        return DataType::UNKNOWN;
     }
 }
 
 std::string getDataTypeValue(const DataType &dataType) {
-    switch(dataType) {
+    switch (dataType) {
         case DataType::INT:
             return "Int";
         case DataType::FLOAT:
@@ -39,17 +52,17 @@ std::string getDataTypeValue(const DataType &dataType) {
         case DataType::STRING:
             return "String";
         case DataType::BOOLEAN:
-            return "Boolean";
+            return "Bool";
         case DataType::CHAR:
             return "Char";
-        case DataType::CUSTOM:
-            return "Custom";
+        case DataType::IDENTIFIER:
+            return "Identifier";
         default:
             return "Unknown";
     }
 }
 
-std::any getDefaultValue(const DataType &value) {
+TypeSet getDefaultValue(const DataType &value) {
 
     if (value == DataType::INT) {
         return 0;
@@ -59,10 +72,8 @@ std::any getDefaultValue(const DataType &value) {
         return "";
     } else if (value == DataType::BOOLEAN) {
         return false;
-    } else if (value == DataType::CUSTOM) {
-        return nullptr;
     }
-    return nullptr;
+    return "Wrong";
 }
 
 DataType getDataTypeFromTokenType(const TokenType &type) {

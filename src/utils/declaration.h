@@ -5,6 +5,8 @@
 #include <any>
 #include "token.h"
 
+using TypeSet = std::variant<int, std::string, double, bool>;
+
 enum class VariableType {
     CONST,
     VAR
@@ -16,7 +18,7 @@ enum class DataType {
     STRING,
     CHAR,
     BOOLEAN,
-    CUSTOM,
+    ARRAY,
     IDENTIFIER,
     UNKNOWN
 };
@@ -24,7 +26,9 @@ enum class DataType {
 
 DataType getDataType(const std::string &value);
 VariableType getVariableType(const std::string &value);
-std::any getDefaultValue(const DataType &value);
+TypeSet getDefaultValue(const DataType &value);
 std::string getDataTypeValue(const DataType &value);
 DataType getDataTypeFromTokenType(const TokenType &type);
+std::string getVariableTypeValue(const VariableType &variableType);
+
 #endif

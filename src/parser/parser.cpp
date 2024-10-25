@@ -10,38 +10,6 @@
 
 ModuleNode root = ModuleNode();
 
-void Parser::printStructure(ModuleNode &node, std::string indentStr) {
-    std::cout << indentStr << "ModuleNode:" << std::endl;
-
-    for (const auto &[key, nodes]: node.sub_roots) {
-        std::cout << indentStr << "  " << key << ":" << std::endl;
-
-        for (const auto &childNode: nodes) {
-            if (childNode->node_type == NodeType::IMPORT_STATEMENT) {
-                const auto *importNode = static_cast<const ImportStatementNode *>(childNode);
-                std::cout << indentStr << "    ImportStatementNode: ";
-                for (const auto &name: importNode->module_names) {
-                    std::cout << name << " ";
-                }
-                std::cout << std::endl;
-            } else if (childNode->node_type == NodeType::CLASS) {
-                const auto *classNode = static_cast<const ClassNode *>(childNode);
-                std::cout << indentStr << "    ClassNode: " << classNode->class_name << std::endl;
-                for (const auto &contentNode: classNode->content) {
-                    printStructure(*static_cast<ModuleNode *>(contentNode), indentStr + "    ");
-                }
-            } else if (childNode->node_type == NodeType::FUNCTION_DECLARATION) {
-                const auto *funcNode = static_cast<const FunctionNode *>(childNode);
-                std::cout << indentStr << "    FunctionNode: " << funcNode->func_name << std::endl;
-                // Additional handling for function parameters and body can be added here
-            } else if (childNode->node_type == NodeType::VARIABLE_DECLARATION) {
-                const auto *varNode = static_cast<const VariableDeclarationNode *>(childNode);
-                std::cout << indentStr << "    VariableDeclarationNode: " << varNode->identifier << std::endl;
-            }
-        }
-    }
-}
-
 Parser::Parser(const std::vector<Token> &tokens) : tokens(tokens), position(0) {
     keywordHandlers["class"] = [this]() { return parseClass(); };
     keywordHandlers["enum"] = [this]() { return parseEnum(); };
@@ -80,19 +48,6 @@ void Parser::expect(TokenType type, const std::string &expectedValue) {
                   << "' at line " << currentToken().line << std::endl;
         throw std::runtime_error("Syntax error: Expected different token");
     }
-}
-
-void Parser::reportError(const std::string &message) {
-    std::cerr << "Error: " << message << " at token '" << currentToken().value
-              << "' at line " << currentToken().line << std::endl;
-    exit(1);
-}
-
-bool Parser::isValidKeyword(const std::string &value) {
-    static const std::unordered_set<std::string> validKeywords = {
-            "class", "enum", "const", "val", "func"
-    };
-    return validKeywords.find(value) != validKeywords.end();
 }
 
 void Parser::parse() {
@@ -144,7 +99,7 @@ ParseNode Parser::parseClass() {
         } else if (currentToken().value == "func") {
             classNode.addChild(parseMethod());
         } else {
-            reportError("Unexpected token " + currentToken().value);
+            displayError("Unexpected token" , currentToken());
         }
     }
     expect(TokenType::SEPARATOR, "}");
@@ -331,15 +286,23 @@ void Parser::generateAST() {
     if (currentToken().type == TokenType::KEYWORD) {
         while (position < tokens.size()) {
             if (isAccessSpecifier(currentToken().value)) {
-
+                advance();
             } else if (isDeclarations(currentToken().value)) {
                 handleDeclaration();
             } else if (isFunction(currentToken().value)) {
+                advance();
             } else {
-                displayError(ITLD, currentToken());
-                exit(1);
+                if (currentToken().value == "import"){
+                    displayError(ISDB);
+                    exit(0);
+                }
+                advance();
+//                displayError(ITLD, currentToken());
+//                exit(1);
             }
         }
+
+        displaySuccess("Successfully generated AST.");
     } else {
         displayError(ETLD, currentToken());
         exit(1);
@@ -347,6 +310,7 @@ void Parser::generateAST() {
 }
 
 void Parser::handleDeclaration() {
+
     VariableDeclarationNode node = VariableDeclarationNode();
     node.property = getVariableType(currentToken().value);
     advance();
@@ -379,6 +343,7 @@ void Parser::handleDeclaration() {
                 currentToken().type == TokenType::STRING_LITERAL ||
                 currentToken().type == TokenType::CHAR_LITERAL
                 ) {
+
             node.value = currentToken().value;
 
             if (node.dataType == DataType::UNKNOWN) {
@@ -391,6 +356,7 @@ void Parser::handleDeclaration() {
         }
 
     } else {
+
         if (node.dataType == DataType::UNKNOWN) {
             displayError("Variable must be initialized.", currentToken());
             exit(1);
@@ -399,12 +365,15 @@ void Parser::handleDeclaration() {
         }
     }
 
-    std::cout
-            << "VariableDeclarationNode: "
-            << node.identifier
-            << " "
-            << getDataTypeValue(node.dataType)
-            << " "
-            << std::any_cast<std::string>(node.value)
-            << std::endl;
+    std::visit([&node](const auto &value) {
+                   std::cout
+                           << "VariableDeclarationNode: "
+                           << node.identifier
+                           << " "
+                           << getDataTypeValue(node.dataType)
+                           << " "
+                           << value
+                           << std::endl;
+               },
+               node.value);
 }

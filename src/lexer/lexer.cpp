@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <format>
-#include "Lexer.h"
+#include "lexer.h"
 #include "../utils/tokens.h"
 #include "../utils/extension.h"
 #include "../utils/keywords.h"
@@ -9,7 +9,7 @@
 
 Lexer::Lexer(const std::string &input) : input_(input), lineNumber_(1), columnIndex_(0), currentChar_(input[0]) {}
 
-Token Lexer::createToken(TokenType type, const std::string &value) {
+Token Lexer::createToken(TokenType type, const std::string &value) const {
     return Token(type, value, lineNumber_);
 }
 

@@ -28,7 +28,7 @@ private:
 
     Token stringLiteral();
 
-    Token createToken(TokenType type, const std::string &value);
+    Token createToken(TokenType type, const std::string &value) const;
 
     Token charLiteral();
 

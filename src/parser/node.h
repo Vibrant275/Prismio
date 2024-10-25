@@ -7,6 +7,7 @@
 #include <map>
 #include <iostream>
 #include <any>
+#include <variant>
 #include "../utils/class_type.h"
 #include "../utils/declaration.h"
 
@@ -29,6 +30,7 @@ enum class AccessModifier {
 class Node {
 public:
     NodeType node_type;
+
     Node(NodeType type) : node_type(type) {}
 };
 
@@ -70,7 +72,7 @@ public:
 
     ImportStatementNode(
             std::vector<std::string> names
-            ) : Node(NodeType::IMPORT_STATEMENT), module_names(names) {}
+    ) : Node(NodeType::IMPORT_STATEMENT), module_names(names) {}
 };
 
 class ClassNode : public Node {
@@ -95,22 +97,23 @@ public:
     std::string identifier;
     VariableType property;
     DataType dataType;
-    std::any value;
+    TypeSet value;
 
-    VariableDeclarationNode(
-            std::string identifier,
-            VariableType property,
-            DataType dataType,
-            std::any value
-    ) :
-            Node(NodeType::VARIABLE_DECLARATION),
-            identifier(identifier),
-            property(property),
-            dataType(dataType),
-            value(value) {}
+//    VariableDeclarationNode(
+//            std::string identifier,
+//            VariableType property,
+//            DataType dataType,
+//            std::variant<int, std::string, double, bool> values
+//    ) :
+//            Node(NodeType::VARIABLE_DECLARATION),
+//            identifier(std::move(identifier)),
+//            property(property),
+//            dataType(dataType),
+//            value(std::move(values)) {}
 
     VariableDeclarationNode()
-            : Node(NodeType::VARIABLE_DECLARATION), identifier(""), property(VariableType::VAR), dataType(DataType::UNKNOWN), value(nullptr) {}
+            : Node(NodeType::VARIABLE_DECLARATION), property(VariableType::VAR),
+              dataType(DataType::UNKNOWN) {}
 
 };
 
