@@ -4,15 +4,15 @@
 
 /////////
 
+import prismio.math.org
+import prismio
+
 var jgk = "String */ Literal"
 const g = 2
 
 var t: Bool
 
 // var t: Int->1324~
-
-import prismio.lang
-import prismio.math
 
 class
 clas MyClass {

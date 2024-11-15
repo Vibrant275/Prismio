@@ -6,6 +6,12 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
+# Use vcpkg
+if(NOT DEFINED ENV{VCPKG_ROOT})
+  message(FATAL_ERROR "VCPKG_ROOT environment variable is not set. Please set it to use vcpkg.")
+endif()
+set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+
 # Project name
 project(Prismio)
 
@@ -15,6 +21,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Enable export of compile commands
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+find_package(benchmark CONFIG REQUIRED)
+#find_package(LLVM CONFIG REQUIRED)
 
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)
@@ -42,4 +51,9 @@ target_link_libraries(Prismio
         codegen
         runtime
         utils
+
+        PRIVATE
+        benchmark::benchmark
+        benchmark::benchmark_main
+#        llvm::llvm
 )

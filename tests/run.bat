@@ -2,7 +2,7 @@
 REM Ensure this script is run from the /tests directory
 
 :: Set the path to your compiled executable
-set EXECUTABLE=..\cmake-build-debug\Debug\Prismio.exe
+set EXECUTABLE=..\cmake-build-debug\Prismio.exe
 
 :: Set the path to your test file
 set TEST_FILE=test.psmi

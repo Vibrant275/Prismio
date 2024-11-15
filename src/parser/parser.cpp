@@ -51,9 +51,8 @@ void Parser::expect(TokenType type, const std::string &expectedValue) {
 }
 
 void Parser::parse() {
+    collectImportStatements();
     generateAST();
-//    collectImportStatements();
-
 
 
 //    printStructure(root);
@@ -249,35 +248,28 @@ ParseNode Parser::parseMethod() {
 }
 
 void Parser::collectImportStatements() {
-    std::cout << currentToken().value << std::endl;
-
-    std::cout << "Collecting import statements..." << std::endl;
 
     while (currentToken().type == TokenType::KEYWORD && currentToken().value == "import") {
-        std::cout << "Found import statement..." << std::endl;
         advance();
 
         std::vector<std::string> moduleNameParts;
-        std::cout << "Collecting module name parts..." << std::endl;
+
         while (currentToken().type == TokenType::IDENTIFIER) {
-            std::cout << "Module name part: " << currentToken().value << std::endl;
             moduleNameParts.push_back(currentToken().value);
             advance();
+
             if (currentToken().type == TokenType::SEPARATOR && currentToken().value == ".") {
-                std::cout << "Found separator..." << std::endl;
                 advance();
+
+                if(currentToken().type != TokenType::IDENTIFIER) {
+                    displayError("Unexpected token" , currentToken());
+                    exit(0);
+                }
             }
         }
-        std::cout << "Module name parts: ";
-        for (const auto &part: moduleNameParts) {
-            std::cout << part << " ";
-        }
-        std::cout << std::endl;
+        auto *importStatement = new ImportStatementNode(moduleNameParts);
 
-        ImportStatementNode *importStatement = new ImportStatementNode(moduleNameParts);
-        std::cout << "Created import statement node..." << std::endl;
         root.add_import_statement(importStatement);
-        std::cout << "Added import statement to root node..." << std::endl;
     }
     std::cout << "Finished collecting import statements." << std::endl;
 }
