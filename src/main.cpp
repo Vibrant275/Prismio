@@ -5,9 +5,6 @@
 #include <vector>
 #include "./lexer/lexer.h"
 #include "./parser/parser.h"
-#include "./semantic/semantic.h"
-#include "./ir/ir.h"
-#include "./codegen/codegen.h"
 
 // Function to read source code from a file
 std::string readSourceCodeFromFile(const std::string& filePath) {
@@ -24,6 +21,10 @@ std::string readSourceCodeFromFile(const std::string& filePath) {
 
 int main(int argc, char* argv[]) {
     std::string input;
+
+
+
+
 
     if (argc > 1) {
         std::string filePath = argv[1];

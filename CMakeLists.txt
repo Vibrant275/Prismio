@@ -1,11 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.8)
 
-# Enable Hot Reload for MSVC compilers if supported.
-if (POLICY CMP0141)
-  cmake_policy(SET CMP0141 NEW)
-  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
-endif()
-
 # Use vcpkg
 if(NOT DEFINED ENV{VCPKG_ROOT})
   message(FATAL_ERROR "VCPKG_ROOT environment variable is not set. Please set it to use vcpkg.")
@@ -22,14 +16,26 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Enable export of compile commands
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(benchmark CONFIG REQUIRED)
-#find_package(LLVM CONFIG REQUIRED)
+# Detect OS and set LLVM directory relative to the project
+set(LLVM_DIR "${CMAKE_SOURCE_DIR}/external/LLVM")
+if(WIN32)
+  set(LLVM_DIR "${LLVM_DIR}/Win/lib/cmake/llvm")
+elseif(APPLE)
+  set(LLVM_DIR "${LLVM_DIR}/Mac")
+elseif(UNIX)
+  set(LLVM_DIR "${LLVM_DIR}/Linux")
+endif()
+
+# Find LLVM
+find_package(LLVM REQUIRED CONFIG)
+include_directories(${LLVM_INCLUDE_DIRS})
+llvm_map_components_to_libnames(LLVM_LIBS all)
 
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Add source files
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.psmi")
+file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.psm")
 
 # Add subdirectories for modularity
 add_subdirectory(src/lexer)
@@ -43,6 +49,7 @@ add_subdirectory(src/utils)
 # Add the main executable
 add_executable(Prismio ${SOURCES} "src/main.cpp")
 
+# Link libraries
 target_link_libraries(Prismio
         lexer
         parser
@@ -51,9 +58,5 @@ target_link_libraries(Prismio
         codegen
         runtime
         utils
-
-        PRIVATE
-        benchmark::benchmark
-        benchmark::benchmark_main
-#        llvm::llvm
+        ${LLVM_LIBS}
 )
