@@ -18,13 +18,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Detect OS and set LLVM directory relative to the project
 set(LLVM_DIR "${CMAKE_SOURCE_DIR}/external/LLVM")
-if(WIN32)
-  set(LLVM_DIR "${LLVM_DIR}/Win/lib/cmake/llvm")
-elseif(APPLE)
-  set(LLVM_DIR "${LLVM_DIR}/Mac")
-elseif(UNIX)
-  set(LLVM_DIR "${LLVM_DIR}/Linux")
-endif()
 
 # Find LLVM
 find_package(LLVM REQUIRED CONFIG)
