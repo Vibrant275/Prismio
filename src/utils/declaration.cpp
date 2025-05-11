@@ -1,6 +1,8 @@
 #include <variant>
 #include "declaration.h"
 
+#include "dataTypes.h"
+
 VariableType getVariableType(const std::string &value) {
     {
         if (value == "const") {
@@ -23,44 +25,26 @@ std::string getVariableTypeValue(const VariableType &variableType) {
     }
 }
 
-DataType getDataType(const std::string &value) {
-    {
-        if (value == "Int") {
-            return DataType::INT;
-        } else if (value == "Float") {
-            return DataType::FLOAT;
-        } else if (value == "String") {
-            return DataType::STRING;
-        } else if (value == "Bool") {
-            return DataType::BOOLEAN;
-        } else if (value == "Char") {
-            return DataType::CHAR;
-        } else if (value == "Array") {
-            return DataType::ARRAY;
-        } else {
-            return DataType::IDENTIFIER;
-        }
-    }
-}
-
-std::string getDataTypeValue(const DataType &dataType) {
-    switch (dataType) {
-        case DataType::INT:
-            return "Int";
-        case DataType::FLOAT:
-            return "Float";
-        case DataType::STRING:
-            return "String";
-        case DataType::BOOLEAN:
-            return "Bool";
-        case DataType::CHAR:
-            return "Char";
-        case DataType::IDENTIFIER:
-            return "Identifier";
-        default:
-            return "Unknown";
-    }
-}
+//
+//
+// std::string getDataTypeValue(const DataType &dataType) {
+//     switch (dataType) {
+//         case DataType::INT:
+//             return "Int";
+//         case DataType::FLOAT:
+//             return "Float";
+//         case DataType::STRING:
+//             return "String";
+//         case DataType::BOOLEAN:
+//             return "Bool";
+//         case DataType::CHAR:
+//             return "Char";
+//         case DataType::IDENTIFIER:
+//             return "Identifier";
+//         default:
+//             return "Unknown";
+//     }
+// }
 
 TypeSet getDefaultValue(const DataType &value) {
 

@@ -48,5 +48,9 @@ node_modules/
 *.ear
 
 external/
+
+# Codeium
+*~
+=======
 configuration/
 package.tar.xz

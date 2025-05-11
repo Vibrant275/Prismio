@@ -3,8 +3,10 @@
 
 #include <string>
 
-// Token types
+#include <string>
+
 enum class TokenType {
+    DATA_TYPE,
     IDENTIFIER,
     NUMBER,
     STRING_LITERAL,
@@ -24,7 +26,6 @@ enum class TokenType {
     OPEN_BRACE,
     CLOSE_BRACE,
 };
-
 
 // Token structure
 struct Token {

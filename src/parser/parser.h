@@ -39,9 +39,12 @@ private:
 
     void collectImportStatements();
 
-    void generateAST();
-
     void handleDeclaration();
+    void handleVariableDeclaration();
+    void handleFunctionBody(FunctionNode* function_node);
+    void handleFunction();
+    void handleFunctionParameters(FunctionNode* function_node);
+    void handleClasses();
 };
 
 #endif // PARSER_H

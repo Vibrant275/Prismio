@@ -1,4 +1,3 @@
-
 #ifndef PRISMIO_NODE_H
 #define PRISMIO_NODE_H
 
@@ -9,17 +8,23 @@
 #include <any>
 #include <variant>
 #include "../utils/class_type.h"
+#include "../utils/dataTypes.h"
 #include "../utils/declaration.h"
 
-enum class NodeType {
+enum class DataType;
+
+enum class NodeType
+{
     MODULE,
     IMPORT_STATEMENT,
     CLASS,
-    FUNCTION_DECLARATION,
+    FUNCTION,
+    FUNCTION_PARAMETER,
     VARIABLE_DECLARATION
 };
 
-enum class AccessModifier {
+enum class AccessModifier
+{
     PUBLIC,
     PRIVATE,
     PROTECTED,
@@ -27,103 +32,94 @@ enum class AccessModifier {
 };
 
 
-class Node {
+class Node
+{
 public:
     NodeType node_type;
-
-    Node(NodeType type) : node_type(type) {}
+    Node(NodeType type) : node_type(type){}
 };
 
-class ModuleNode : public Node {
+class ModuleNode : public Node
+{
 public:
-    std::map<std::string, std::vector<Node *>> sub_roots;
+    std::vector<std::unique_ptr<Node>> module;
+    ModuleNode() : Node(NodeType::MODULE){}
+};
 
-    ModuleNode() : Node(NodeType::MODULE) {
-        sub_roots["import_statements"] = {};
-        sub_roots["classes"] = {};
-        sub_roots["top_level_declarations"] = {};
-        sub_roots["top_level_functions"] = {}; // Add this line
-    }
+class ImportStatementNode : public Node
+{
+public:
+    std::vector<std::string> module_names;
 
-    void add_import_statement(Node *import_stmt) {
-        sub_roots["import_statements"].push_back(import_stmt);
-    }
+    ImportStatementNode() : Node(NodeType::IMPORT_STATEMENT){}
 
-    void add_class(Node *class_node) {
-        sub_roots["classes"].push_back(class_node);
-    }
-
-    void add_top_level_declaration(Node *declaration) {
-        if (declaration->node_type == NodeType::FUNCTION_DECLARATION ||
-            declaration->node_type == NodeType::VARIABLE_DECLARATION) {
-            sub_roots["top_level_declarations"].push_back(declaration);
-            if (declaration->node_type == NodeType::FUNCTION_DECLARATION) {
-                sub_roots["top_level_functions"].push_back(declaration);
-            }
-        } else {
-            std::cout << "Invalid top-level declaration type" << std::endl;
+    void printModuleNames() const
+    {
+        for (const auto& module_name : module_names)
+        {
+            std::cout << module_name << std::endl;
         }
     }
 };
 
-class ImportStatementNode : public Node {
-public:
-    std::vector<std::string> module_names;
-
-    ImportStatementNode(
-            std::vector<std::string> names
-    ) : Node(NodeType::IMPORT_STATEMENT), module_names(names) {}
-};
-
-class ClassNode : public Node {
+class ClassNode : public Node
+{
 public:
     std::string class_name;
     AccessModifier access_modifier;
     ClassType class_type;
 
-    std::vector<Node *> content;
-//    std::vector<Node*> functions;
+    std::vector<Node*> content;
+    //    std::vector<Node*> functions;
 
     ClassNode(std::string name, AccessModifier access = AccessModifier::PUBLIC, ClassType type = ClassType::REGULAR)
-            : Node(NodeType::CLASS), class_name(name), access_modifier(access), class_type(type) {}
+        : Node(NodeType::CLASS), class_name(name), access_modifier(access), class_type(type)
+    {
+    }
 
-    void addContent(Node *content) {
+    void addContent(Node* content)
+    {
         this->content.push_back(content);
     }
 };
 
-class VariableDeclarationNode : public Node {
+class VariableDeclarationNode : public Node
+{
 public:
     std::string identifier;
     VariableType property;
     DataType dataType;
     TypeSet value;
 
-//    VariableDeclarationNode(
-//            std::string identifier,
-//            VariableType property,
-//            DataType dataType,
-//            std::variant<int, std::string, double, bool> values
-//    ) :
-//            Node(NodeType::VARIABLE_DECLARATION),
-//            identifier(std::move(identifier)),
-//            property(property),
-//            dataType(dataType),
-//            value(std::move(values)) {}
-
     VariableDeclarationNode()
-            : Node(NodeType::VARIABLE_DECLARATION), property(VariableType::VAR),
-              dataType(DataType::UNKNOWN) {}
-
+        : Node(NodeType::VARIABLE_DECLARATION), property(VariableType::VAR),
+          dataType(DataType::UNKNOWN)
+    {
+    }
 };
 
-class FunctionNode : public Node {
+class FunctionNode : public Node
+{
 public:
     std::string func_name;
-    std::vector<Node *> params;
-    std::vector<Node *> body;
+    std::vector<Node*> params;
+    std::vector<Node*> body;
 
-    FunctionNode(std::string name) : Node(NodeType::FUNCTION_DECLARATION), func_name(name) {}
+    FunctionNode(std::string name) : Node(NodeType::FUNCTION), func_name(name)
+    {
+    }
+};
+
+class FunctionParameterNode : public Node
+{
+public:
+    std::string identifier;
+    DataType dataType;
+
+    FunctionParameterNode(std::string identifier, DataType dataType) : Node(NodeType::FUNCTION_PARAMETER),
+                                                                       identifier(identifier), dataType(dataType)
+    {
+    }
 };
 
 #endif

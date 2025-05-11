@@ -8,9 +8,9 @@ const std::unordered_set<char> operators = {'+', '-', '*', '/', '=', '<', '>', '
 const std::unordered_set<char> separators = {'(', ')', '{', '}', '[', ']', ';', ',' ,'.', ':'};
 
 bool isOperator(char c) {
-    return operators.find(c) != operators.end();
+    return operators.contains(c);
 }
 
 bool isSeparator(char c) {
-    return separators.find(c) != separators.end();
+    return separators.contains(c);
 }

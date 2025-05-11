@@ -2,73 +2,85 @@
 #include <string>
 #include "keywords.h"
 
-const std::unordered_set<std::string> generalKeywords = {
-        "null",
+using namespace std;
 
-        "true", "false",
-        "switch",
-        "case",
-        "default",
-        "fun",
+const std::unordered_set<std::string> globalKeywords = {
+    "import"
+};
 
-        "import",
+const unordered_set<string> blockKeywords = {
+    "null",
 
-        // Loop
-        "execute", "until",
-        "while",
-        "in",
+    "true", "false",
+    "switch",
+    "case",
+    "default",
 
-        // Classes
-        "class",
-        "interface",
-        "enum",
-        "data",
-        "sealed",
+    "if",
+    "else",
 
-        // declarations
-        "const",
-        "var",
+    "print",
+    "println",
+};
 
-        // Access Specifier
-        "private",
-        "public",
-        "protected",
-        "internal",
+const std::unordered_set<std::string> flowControl = {
+    "break",
+    "continue",
+    "return",
+    "throw"
+};
 
-        // Control Flow
-        "if",
-        "else",
-
-        "return",
-
-        "break",
-        "continue",
-
-        "inout"
+const unordered_set<string> loops = {
+    "while",
+    "execute",
+    "for",
 };
 
 const std::unordered_set<std::string> accessSpecifier = {
-        "private",
-        "public",
-        "protected",
-        "internal",
+    "private",
+    "public",
+    "protected",
+    "internal",
 };
 
 const std::unordered_set<std::string> declarations = {
-        "var",
-        "const",
+    "var",
+    "const",
+
+    "class",
+    "interface",
+    "enum",
+    "data",
+    "sealed",
+
+    "fun"
 };
 
-bool isKeyword(const std::string &value) {
-    return generalKeywords.find(value) != generalKeywords.end();
-}
-bool isAccessSpecifier(const std::string &value) {
-    return accessSpecifier.find(value) != accessSpecifier.end();
-}
-bool isDeclarations(const std::string &value) {
-    return declarations.find(value) != declarations.end();
+bool isKeyword(const std::string& value)
+{
+    return
+        globalKeywords.contains(value) ||
+        flowControl.contains(value) ||
+        loops.contains(value) ||
+        accessSpecifier.contains(value) ||
+        declarations.contains(value) ||
+        blockKeywords.contains(value);
 }
 
-bool isFunction(const std::string &value) {
-    return value == "fun";
+bool isAccessSpecifier(const std::string& value)
+{
+    return accessSpecifier.contains(value);
+}
+
+bool isDeclarations(const std::string& value)
+{
+    return declarations.contains(value);
+}
+
+bool isGlobalKeyword(const std::string& value)
+{
+    return
+        globalKeywords.contains(value) ||
+        accessSpecifier.contains(value) ||
+        declarations.contains(value);
 }

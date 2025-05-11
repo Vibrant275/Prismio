@@ -6,7 +6,8 @@
 #include "./lexer/lexer.h"
 #include "./parser/parser.h"
 
-// Function to read source code from a file
+using namespace std;
+
 std::string readSourceCodeFromFile(const std::string& filePath) {
     std::ifstream file(filePath);
     if (!file.is_open()) {
@@ -19,33 +20,34 @@ std::string readSourceCodeFromFile(const std::string& filePath) {
     return buffer.str();
 }
 
-int main(int argc, char* argv[]) {
+int main(const int argc, char* argv[]) {
     std::string input;
 
-
-
-
-
     if (argc > 1) {
-        std::string filePath = argv[1];
-        if (filePath.size() < 5 || filePath.substr(filePath.size() - 5) != ".psmi") {
-            std::cerr << "Error: File must have a .psmi extension." << std::endl;
+        const std::string filePath = argv[1];
+        const string extension = filePath.substr(filePath.size() - 4);
+        if (extension != ".psm" && extension != ".ums") {
+            std::cerr << "Error: File must have a .psm extension." << std::endl;
             return 1;
         }
         input = readSourceCodeFromFile(filePath);
     } else {
-        std::cerr << "Usage: " << argv[0] << " <source_file.psmi>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <source_file.psm>" << std::endl;
         return 1;
     }
 
     // Tokenization
     Lexer lexer(input);
-    std::vector<Token> tokens = lexer.tokenize();
+    vector<Token> tokens = lexer.tokenize();
+    std::cout << "Tokenization complete." << std::endl;
+
+    /*
     std::cout << "Tokens generated: \n" << std::endl;
 
      for (const auto& token : tokens) {
          std::cout << "Token: " << token.value << std::endl;
      }
+     */
 
     Parser parser(tokens);
     parser.parse();
