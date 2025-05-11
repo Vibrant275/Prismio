@@ -7,7 +7,8 @@ VariableType getVariableType(const std::string &value) {
     {
         if (value == "const") {
             return VariableType::CONST;
-        } else if (value == "var") {
+        }
+        if (value == "var") {
             return VariableType::VAR;
         }
         return VariableType::CONST;

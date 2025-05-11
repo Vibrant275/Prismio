@@ -4,6 +4,7 @@
 #include "../utils/extension.h"
 #include "../utils/constants.h"
 #include "../utils/keywords.h"
+#include "../utils/declaration.h"
 #include "../utils/dataTypes.h"
 #include <iostream>
 #include <unordered_set>
@@ -63,48 +64,39 @@ void Parser::expect(TokenType type, const std::string& expectedValue)
     }
 }
 
-void Parser::parse()
+ModuleNode Parser::parse()
 {
     collectImportStatements();
 
-    // while (position < tokens.size())
-    // {
-    //
-    // }
-    //
-    // if (currentToken().type == TokenType::KEYWORD)
-    // {
-    //     while (position < tokens.size())
-    //     {
-    //         if (isGlobalKeyword(currentToken().value))
-    //         {
-    //             if (isDeclarations(currentToken().value))
-    //             {
-    //                 handleDeclaration();
-    //             }
-    //         }
-    //         else
-    //         {
-    //             displayError(ITLD, currentToken());
-    //             exit(1);
-    //         }
-    //     }
-    // }
-    //
-    // // else if (currentToken().type == TokenType::CLASS ||
-    // //     currentToken().type == TokenType::ENUM ||
-    // //     currentToken().type == TokenType::CONST ||
-    // //     currentToken().type == TokenType::VAL)
-    // // {
-    // //     return ParseTree(parseStatement());
-    // // }
-    // else
-    // {
-    //     std::cerr << "Unexpected token type: " << static_cast<int>(currentToken().type)
-    //         << " at line " << currentToken().line << std::endl;
-    //
-    //     exit(1);
-    // }
+    while (position < tokens.size())
+    {
+        if (isGlobalKeyword(currentToken().value))
+        {
+            std::string accessSpecifier = "public";
+
+            if (isAccessSpecifier(currentToken().value))
+            {
+                accessSpecifier = currentToken().value;
+                advance();
+
+                if (!isDeclarations(currentToken().value))
+                {
+                    displayError(IAD, currentToken());
+                    exit(1);
+                }
+
+                handleDeclaration(accessSpecifier);
+            }
+            else handleDeclaration(accessSpecifier);
+        }
+        else
+        {
+            displayError(ITLD, currentToken());
+            exit(1);
+        }
+    }
+
+    return std::move(root);
 }
 
 ParseNode Parser::parseClass()
@@ -327,7 +319,6 @@ void Parser::collectImportStatements()
         }
         auto importStatement = ImportStatementNode();
         importStatement.module_names = moduleNameParts;
-
         root.module.emplace_back(&importStatement);
 
         /*
@@ -338,11 +329,11 @@ void Parser::collectImportStatements()
     std::cout << "Finished collecting import statements." << std::endl;
 }
 
-void Parser::handleDeclaration()
+void Parser::handleDeclaration(const std::string& accessSpecifier)
 {
     if (currentToken().value == "const" || currentToken().value == "var")
     {
-        handleVariableDeclaration();
+        handleVariableDeclaration(accessSpecifier);
     }
     else if (currentToken().value == "fun")
     {
@@ -354,92 +345,58 @@ void Parser::handleDeclaration()
     }
 }
 
-//
-void Parser::handleVariableDeclaration()
+void Parser::handleVariableDeclaration(std::string accessSpecifier)
 {
-}
+    VariableDeclarationNode node = VariableDeclarationNode();
+    node.access = std::move(accessSpecifier);
+    node.property = getVariableType(currentToken().value);
+    advance();
 
-//     VariableDeclarationNode node = VariableDeclarationNode();
-//     node.property = getVariableType(currentToken().value);
-//     advance();
-//
-//     if (currentToken().type == TokenType::IDENTIFIER)
-//     {
-//         node.identifier = currentToken().value;
-//         advance();
-//     }
-//     else
-//     {
-//         displayError("Invalid identifier", currentToken());
-//         exit(1);
-//     }
-//
-//     if (currentToken().value == ":")
-//     {
-//         advance();
-//         if (getDataType(currentToken().value) != DataType::UNKNOWN)
-//         {
-//             node.dataType = getDataType(currentToken().value);
-//             advance();
-//         }
-//         else
-//         {
-//             displayError("Invalid data type", currentToken());
-//             exit(1);
-//         }
-//     }
-//
-//     if (currentToken().value == "=")
-//     {
-//         advance();
-//
-//         if (
-//             currentToken().type == TokenType::IDENTIFIER ||
-//             currentToken().type == TokenType::NUMBER ||
-//             currentToken().type == TokenType::STRING_LITERAL ||
-//             currentToken().type == TokenType::CHAR_LITERAL
-//         )
-//         {
-//             node.value = currentToken().value;
-//
-//             if (node.dataType == DataType::UNKNOWN)
-//             {
-//                 node.dataType = getDataTypeFromTokenType(currentToken().type);
-//             }
-//             advance();
-//         }
-//         else
-//         {
-//             displayError("Invalid data", currentToken());
-//             exit(1);
-//         }
-//     }
-//     else
-//     {
-//         if (node.dataType == DataType::UNKNOWN)
-//         {
-//             displayError("Variable must be initialized.", currentToken());
-//             exit(1);
-//         }
-//         else
-//         {
-//             node.value = getDefaultValue(node.dataType);
-//         }
-//     }
-//
-//     std::visit([&node](const auto& value)
-//                {
-//                    std::cout
-//                        << "VariableDeclarationNode: "
-//                        << node.identifier
-//                        << " "
-//                        << getDataTypeValue(node.dataType)
-//                        << " "
-//                        << value
-//                        << std::endl;
-//                },
-//                node.value);
-// }
+    if (currentToken().type == TokenType::IDENTIFIER)
+    {
+        node.identifier = currentToken().value;
+        advance();
+
+        if (currentToken().value == "=")
+        {
+            advance();
+
+            if (
+                currentToken().type == TokenType::IDENTIFIER ||
+                currentToken().type == TokenType::NUMBER ||
+                currentToken().type == TokenType::STRING_LITERAL ||
+                currentToken().type == TokenType::CHAR_LITERAL
+                // currentToken().type == TokenType::BOOLEAN
+            )
+            {
+                node.value = currentToken().value;
+
+                if (node.dataType == DataType::UNKNOWN)
+                {
+                    node.dataType = getDataTypeFromTokenType(currentToken().type);
+                }
+                advance();
+            }
+            else
+            {
+                displayError("Invalid data", currentToken());
+                exit(1);
+            }
+        }
+        else
+        {
+            displayError("Variable must be initialized.", currentToken());
+            exit(1);
+        }
+    }
+    else
+    {
+        displayError("Invalid identifier", currentToken());
+        exit(1);
+    }
+
+    root.module.emplace_back(&node);
+}
 
 
 void Parser::handleFunction()

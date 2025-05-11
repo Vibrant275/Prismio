@@ -80,7 +80,6 @@ bool isDeclarations(const std::string& value)
 bool isGlobalKeyword(const std::string& value)
 {
     return
-        globalKeywords.contains(value) ||
         accessSpecifier.contains(value) ||
         declarations.contains(value);
 }

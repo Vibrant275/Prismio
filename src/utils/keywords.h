@@ -11,5 +11,6 @@ bool isKeyword(const std::string& value);
 bool isAccessSpecifier(const std::string &value);
 bool isDeclarations(const std::string &value);
 bool isFunction(const std::string &value);
+bool isGlobalKeyword(const std::string& value);
 
 #endif

@@ -23,6 +23,27 @@ enum class NodeType
     VARIABLE_DECLARATION
 };
 
+inline std::string getNodeTypeString(const NodeType type)
+{
+    switch (type)
+    {
+        case NodeType::MODULE:
+            return "MODULE";
+        case NodeType::IMPORT_STATEMENT:
+            return "IMPORT_STATEMENT";
+        case NodeType::CLASS:
+            return "CLASS";
+        case NodeType::FUNCTION:
+            return "FUNCTION";
+        case NodeType::FUNCTION_PARAMETER:
+            return "FUNCTION_PARAMETER";
+        case NodeType::VARIABLE_DECLARATION:
+            return "VARIABLE_DECLARATION";
+        default:
+            return "Unknown";
+    }
+}
+
 enum class AccessModifier
 {
     PUBLIC,
@@ -36,6 +57,9 @@ class Node
 {
 public:
     NodeType node_type;
+
+    virtual ~Node() = default;
+
     Node(NodeType type) : node_type(type){}
 };
 
@@ -52,14 +76,6 @@ public:
     std::vector<std::string> module_names;
 
     ImportStatementNode() : Node(NodeType::IMPORT_STATEMENT){}
-
-    void printModuleNames() const
-    {
-        for (const auto& module_name : module_names)
-        {
-            std::cout << module_name << std::endl;
-        }
-    }
 };
 
 class ClassNode : public Node
@@ -88,6 +104,7 @@ class VariableDeclarationNode : public Node
 public:
     std::string identifier;
     VariableType property;
+    std::string access;
     DataType dataType;
     TypeSet value;
 

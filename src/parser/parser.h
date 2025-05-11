@@ -13,7 +13,7 @@ class Parser {
 public:
     Parser(const std::vector<Token>& tokens);
 
-    void parse();
+    ModuleNode parse();
 
     bool checkBracesBalance();
 
@@ -39,8 +39,9 @@ private:
 
     void collectImportStatements();
 
-    void handleDeclaration();
-    void handleVariableDeclaration();
+    void handleDeclaration(const std::string& accessSpecifier);
+    void handleVariableDeclaration(std::string accessSpecifier);
+
     void handleFunctionBody(FunctionNode* function_node);
     void handleFunction();
     void handleFunctionParameters(FunctionNode* function_node);

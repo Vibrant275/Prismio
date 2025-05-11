@@ -22,7 +22,7 @@ set(LLVM_DIR "${CMAKE_SOURCE_DIR}/external/LLVM/lib/cmake/llvm")
 # Find LLVM
 find_package(LLVM REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
-llvm_map_components_to_libnames(LLVM_LIBS all)
+llvm_map_components_to_libnames(LLVM_LIBS core irreader support)
 
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)
@@ -35,7 +35,6 @@ add_subdirectory(src/lexer)
 add_subdirectory(src/parser)
 add_subdirectory(src/semantic)
 add_subdirectory(src/ir)
-add_subdirectory(src/codegen)
 add_subdirectory(src/runtime)
 add_subdirectory(src/utils)
 
@@ -48,7 +47,6 @@ target_link_libraries(Prismio
         parser
         semantic
         ir
-        codegen
         runtime
         utils
         ${LLVM_LIBS}

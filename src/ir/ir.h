@@ -4,13 +4,8 @@
 #include "../parser/parser_nodes.h"
 #include <string>
 
-class IRGenerator {
-public:
-    IRGenerator(const ParseTree& parseTree);
-    std::string generateIR();
+#include "../parser/node.h"
 
-private:
-    ParseTree parseTree;
-};
+void generateIR(const ModuleNode &moduleNode);
 
 #endif // IR_H

@@ -5,6 +5,8 @@
 #include <vector>
 #include "./lexer/lexer.h"
 #include "./parser/parser.h"
+#include "./ir/ir.h"
+#include "parser/node.h"
 
 using namespace std;
 
@@ -50,33 +52,12 @@ int main(const int argc, char* argv[]) {
      */
 
     Parser parser(tokens);
-    parser.parse();
+    const auto ast = parser.parse();
     std::cout << "Parsing complete." << std::endl;
 
-//    try {
-//        // Parsing
-//
-//        // Semantic Analysis
-//        SemanticAnalyzer semanticAnalyzer(parseTree);
-//        if (!semanticAnalyzer.analyze()) {
-//            std::cerr << "Semantic analysis failed." << std::endl;
-//            return 1;
-//        }
-//
-//        // Intermediate Representation Generation
-//        IRGenerator irGenerator(parseTree);
-//        std::string irCode = irGenerator.generateIR();
-//        std::cout << "Intermediate representation generated:" << std::endl;
-//        std::cout << irCode << std::endl;
-//
-//        // Code Generation
-//        CodeGenerator codeGenerator(irCode);
-//        codeGenerator.generateCode();
-//        std::cout << "Code generation complete." << std::endl;
-//    } catch (const std::runtime_error& e) {
-//        std::cerr << "Error: " << e.what() << std::endl;
-//        return 1;
-//    }
+    // std::cout << getNodeTypeString(ast.module.at(0)->node_type) << std::endl;
+    std::cout << ast.module.size() << std::endl;
+    // generateIR(ast);
 
     return 0;
 }
