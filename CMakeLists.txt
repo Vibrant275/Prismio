@@ -17,7 +17,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Detect OS and set LLVM directory relative to the project
-set(LLVM_DIR "${CMAKE_SOURCE_DIR}/external/LLVM")
+set(LLVM_DIR "${CMAKE_SOURCE_DIR}/external/LLVM/lib/cmake/llvm")
 
 # Find LLVM
 find_package(LLVM REQUIRED CONFIG)
