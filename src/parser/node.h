@@ -7,6 +7,7 @@
 #include <iostream>
 #include <any>
 #include <variant>
+#include <memory>
 #include "../utils/class_type.h"
 #include "../utils/dataTypes.h"
 #include "../utils/declaration.h"
