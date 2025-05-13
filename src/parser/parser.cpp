@@ -317,9 +317,9 @@ void Parser::collectImportStatements()
                 exit(0);
             }
         }
-        auto importStatement = ImportStatementNode();
-        importStatement.module_names = moduleNameParts;
-        root.module.emplace_back(&importStatement);
+        auto importStatement = std::make_unique<ImportStatementNode>();
+        importStatement->module_names = moduleNameParts;
+        root.module.push_back(std::move(importStatement));
 
         /*
         importStatement.printModuleNames();
@@ -347,14 +347,14 @@ void Parser::handleDeclaration(const std::string& accessSpecifier)
 
 void Parser::handleVariableDeclaration(std::string accessSpecifier)
 {
-    VariableDeclarationNode node = VariableDeclarationNode();
-    node.access = std::move(accessSpecifier);
-    node.property = getVariableType(currentToken().value);
+    auto node = std::make_unique<VariableDeclarationNode>();
+    node->access = std::move(accessSpecifier);
+    node->property = getVariableType(currentToken().value);
     advance();
 
     if (currentToken().type == TokenType::IDENTIFIER)
     {
-        node.identifier = currentToken().value;
+        node->identifier = currentToken().value;
         advance();
 
         if (currentToken().value == "=")
@@ -369,11 +369,11 @@ void Parser::handleVariableDeclaration(std::string accessSpecifier)
                 // currentToken().type == TokenType::BOOLEAN
             )
             {
-                node.value = currentToken().value;
+                node->value = currentToken().value;
 
-                if (node.dataType == DataType::UNKNOWN)
+                if (node->dataType == DataType::UNKNOWN)
                 {
-                    node.dataType = getDataTypeFromTokenType(currentToken().type);
+                    node->dataType = getDataTypeFromTokenType(currentToken().type);
                 }
                 advance();
             }
@@ -395,7 +395,7 @@ void Parser::handleVariableDeclaration(std::string accessSpecifier)
         exit(1);
     }
 
-    root.module.emplace_back(&node);
+    root.module.push_back(std::move(node));
 }
 
 

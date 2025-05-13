@@ -55,9 +55,9 @@ int main(const int argc, char* argv[]) {
     const auto ast = parser.parse();
     std::cout << "Parsing complete." << std::endl;
 
-    // std::cout << getNodeTypeString(ast.module.at(0)->node_type) << std::endl;
+    std::cout << getNodeTypeString(ast.module.at(3)->node_type) << std::endl;
     std::cout << ast.module.size() << std::endl;
-    // generateIR(ast);
+    generateIR(ast);
 
     return 0;
 }
