@@ -40,6 +40,7 @@ add_subdirectory(src/utils)
 
 # Add the main executable
 add_executable(Prismio ${SOURCES} "src/main.cpp")
+#add_executable(ums ${SOURCES} "src/ums/ums.cpp")
 
 # Link libraries
 target_link_libraries(Prismio

@@ -7,6 +7,7 @@
 #include "./parser/parser.h"
 #include "./ir/ir.h"
 #include "parser/node.h"
+#include "utils/extension.h"
 
 using namespace std;
 
@@ -28,7 +29,7 @@ int main(const int argc, char* argv[]) {
     if (argc > 1) {
         const std::string filePath = argv[1];
         const string extension = filePath.substr(filePath.size() - 4);
-        if (extension != ".psm" && extension != ".ums") {
+        if (extension != ".psm") {
             std::cerr << "Error: File must have a .psm extension." << std::endl;
             return 1;
         }
@@ -40,16 +41,25 @@ int main(const int argc, char* argv[]) {
 
     // Tokenization
     Lexer lexer(input);
-    vector<Token> tokens = lexer.tokenize();
+    auto result = lexer.tokenize();
+
+    if (result.errors.size() > 0) {
+        for (const auto& error : result.errors) {
+            displayError(error.message);
+        }
+        return 1;
+    }
+
+    vector<Token> tokens = result.tokens;
     std::cout << "Tokenization complete." << std::endl;
 
-    /*
-    std::cout << "Tokens generated: \n" << std::endl;
+   //  /*
+     std::cout << "Tokens generated: \n" << std::endl;
 
-     for (const auto& token : tokens) {
-         std::cout << "Token: " << token.value << std::endl;
-     }
-     */
+      for (const auto& token : tokens) {
+          std::cout << "Token: " << token.value << std::endl;
+      }
+     // */
 
     Parser parser(tokens);
     const auto ast = parser.parse();

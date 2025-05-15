@@ -187,7 +187,7 @@ ParseNode Parser::parseConst()
     advance();
 
     // Parse assignment
-    expect(TokenType::OPERATOR, "=");
+    expect(TokenType::ASSIGNMENT_OPERATOR, "=");
     advance();
 
     // Parse value
@@ -221,7 +221,7 @@ ParseNode Parser::parseVar()
     advance();
 
     // Parse assignment
-    expect(TokenType::OPERATOR, "=");
+    expect(TokenType::ASSIGNMENT_OPERATOR, "=");
     advance();
 
     // Parse value
@@ -364,8 +364,8 @@ void Parser::handleVariableDeclaration(std::string accessSpecifier)
             if (
                 currentToken().type == TokenType::IDENTIFIER ||
                 currentToken().type == TokenType::NUMBER ||
-                currentToken().type == TokenType::STRING_LITERAL ||
-                currentToken().type == TokenType::CHAR_LITERAL
+                currentToken().type == TokenType::STRING ||
+                currentToken().type == TokenType::CHAR
                 // currentToken().type == TokenType::BOOLEAN
             )
             {

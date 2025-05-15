@@ -6,25 +6,32 @@
 #include <string>
 
 enum class TokenType {
+
+    // Literals
+    STRING,
+    CHAR,
+    NUMBER,
+
     DATA_TYPE,
     IDENTIFIER,
-    NUMBER,
-    STRING_LITERAL,
-    CHAR_LITERAL,
-    OPERATOR,
     SEPARATOR,
+
+    ARITHMETIC_OPERATOR,
+    RELATIONAL_OPERATOR,
+    LOGICAL_OPERATOR,
+    ASSIGNMENT_OPERATOR,
+    UNARY_OPERATOR,
+
     KEYWORD,
     UNKNOWN,
-    CLASS,
-    ENUM,
-    CONST,
-    VAL,
-    OPEN_PAREN,
-    CLOSE_PAREN,
-    OPEN_BRACKET,
-    CLOSE_BRACKET,
-    OPEN_BRACE,
-    CLOSE_BRACE,
+
+    // Reserved keywords
+    ACCESS_SPECIFIER,
+    DECLARATIONS,
+    FLOW_CONTROL,
+    LOOPS,
+    IMPORT,
+    CONDITIONALS
 };
 
 // Token structure

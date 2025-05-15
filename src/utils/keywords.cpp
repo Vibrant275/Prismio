@@ -2,13 +2,11 @@
 #include <string>
 #include "keywords.h"
 
-using namespace std;
-
-const std::unordered_set<std::string> globalKeywords = {
+const std::unordered_set<std::string> import = {
     "import"
 };
 
-const unordered_set<string> blockKeywords = {
+const std::unordered_set<std::string> conditionals = {
     "null",
 
     "true", "false",
@@ -17,10 +15,7 @@ const unordered_set<string> blockKeywords = {
     "default",
 
     "if",
-    "else",
-
-    "print",
-    "println",
+    "else"
 };
 
 const std::unordered_set<std::string> flowControl = {
@@ -30,7 +25,7 @@ const std::unordered_set<std::string> flowControl = {
     "throw"
 };
 
-const unordered_set<string> loops = {
+const std::unordered_set<std::string> loops = {
     "while",
     "execute",
     "for",
@@ -59,12 +54,12 @@ const std::unordered_set<std::string> declarations = {
 bool isKeyword(const std::string& value)
 {
     return
-        globalKeywords.contains(value) ||
+        import.contains(value) ||
         flowControl.contains(value) ||
         loops.contains(value) ||
         accessSpecifier.contains(value) ||
         declarations.contains(value) ||
-        blockKeywords.contains(value);
+        conditionals.contains(value);
 }
 
 bool isAccessSpecifier(const std::string& value)
@@ -75,6 +70,26 @@ bool isAccessSpecifier(const std::string& value)
 bool isDeclarations(const std::string& value)
 {
     return declarations.contains(value);
+}
+
+bool isLoop(const std::string& value)
+{
+    return loops.contains(value);
+}
+
+bool isFlowControl(const std::string& value)
+{
+    return flowControl.contains(value);
+}
+
+bool isConditionals(const std::string& value)
+{
+    return conditionals.contains(value);
+}
+
+bool isImport(const std::string& value)
+{
+    return import.contains(value);
 }
 
 bool isGlobalKeyword(const std::string& value)

@@ -68,9 +68,9 @@ DataType getDataTypeFromTokenType(const TokenType &type) {
             return DataType::INT;
 //        case TokenType::NUMBER:
 //            return DataType::FLOAT;
-        case TokenType::STRING_LITERAL:
+        case TokenType::STRING:
             return DataType::STRING;
-        case TokenType::CHAR_LITERAL:
+        case TokenType::CHAR:
             return DataType::CHAR;
         default:
             return DataType::UNKNOWN;

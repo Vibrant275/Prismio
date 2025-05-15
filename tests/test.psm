@@ -9,11 +9,10 @@ import skia.compositor
 /////////
 
 const n = 9
-
+~ ` #@$
 
 
 /*
-
 class
 clas MyClass {
 
@@ -29,6 +28,4 @@ clas MyClass {
 
     }
 
-    */
-
-
+*/
