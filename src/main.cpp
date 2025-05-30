@@ -12,62 +12,76 @@
 using namespace std;
 
 std::string readSourceCodeFromFile(const std::string& filePath) {
-    std::ifstream file(filePath);
-    if (!file.is_open()) {
+    std::ifstream file(filePath, std::ios::in | std::ios::binary | std::ios::ate);
+    if (!file) {
         throw std::runtime_error("Error: Could not open file " + filePath);
     }
 
-    std::stringstream buffer;
-    buffer << file.rdbuf();
+    std::streamsize size = file.tellg();
+    if (size < 0) {
+        throw std::runtime_error("Error: Could not determine file size: " + filePath);
+    }
 
-    return buffer.str();
+    std::string buffer(static_cast<size_t>(size), '\0');
+    file.seekg(0);
+    if (!file.read(buffer.data(), size)) {
+        throw std::runtime_error("Error: Could not read file: " + filePath);
+    }
+
+    return buffer;
 }
 
-int main(const int argc, char* argv[]) {
-    std::string input;
 
-    if (argc > 1) {
-        const std::string filePath = argv[1];
-        const string extension = filePath.substr(filePath.size() - 4);
-        if (extension != ".psm") {
-            std::cerr << "Error: File must have a .psm extension." << std::endl;
-            return 1;
-        }
+int main(int argc, char* argv[]) {
+    std::ios::sync_with_stdio(false);
+
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <source_file.psm>\n";
+        return EXIT_FAILURE;
+    }
+
+    const std::string filePath = argv[1];
+
+    if (filePath.length() < 4 || filePath.substr(filePath.length() - 4) != ".psm") {
+        std::cerr << "Error: File must have a .psm extension.\n";
+        return EXIT_FAILURE;
+    }
+
+    std::string input;
+    try {
         input = readSourceCodeFromFile(filePath);
-    } else {
-        std::cerr << "Usage: " << argv[0] << " <source_file.psm>" << std::endl;
-        return 1;
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << '\n';
+        return EXIT_FAILURE;
     }
 
     // Tokenization
     Lexer lexer(input);
     auto result = lexer.tokenize();
 
-    if (result.errors.size() > 0) {
-        for (const auto& error : result.errors) {
+    if (!result.errors.empty()) {
+        for (const auto& error : result.errors)
             displayError(error.message);
-        }
-        return 1;
+        return EXIT_FAILURE;
     }
 
-    vector<Token> tokens = result.tokens;
-    std::cout << "Tokenization complete." << std::endl;
+    std::cout << "Tokenization complete.\n";
 
-   //  /*
-     std::cout << "Tokens generated: \n" << std::endl;
+#ifdef DEBUG_TOKENS
+    std::cout << "Tokens generated:\n";
+    for (const auto& token : result.tokens)
+        std::cout << "Token: " << token.value << '\n';
+#endif
 
-      for (const auto& token : tokens) {
-          std::cout << "Token: " << token.value << std::endl;
-      }
-     // */
-
-    Parser parser(tokens);
+    Parser parser(result.tokens);
     const auto ast = parser.parse();
-    std::cout << "Parsing complete." << std::endl;
+    std::cout << "Parsing complete.\n";
 
-    std::cout << getNodeTypeString(ast.module.at(3)->node_type) << std::endl;
-    std::cout << ast.module.size() << std::endl;
+    if (ast.module.size() > 3)
+        std::cout << getNodeTypeString(ast.module[3]->node_type) << '\n';
+
+    std::cout << ast.module.size() << '\n';
+
     generateIR(ast);
-
-    return 0;
+    return EXIT_SUCCESS;
 }
