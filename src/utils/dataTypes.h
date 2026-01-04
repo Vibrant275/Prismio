@@ -7,7 +7,6 @@ bool isDataType(const std::string& value);
 
 enum class DataType {
     INT,
-    FLOAT,
     STRING,
     CHAR,
     BOOLEAN,

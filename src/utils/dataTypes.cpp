@@ -3,7 +3,6 @@
 
 const std::unordered_set<std::string> dataTypes = {
     "Int",
-    "Float",
     "String",
     "Bool",
     "Char"
@@ -17,9 +16,6 @@ DataType getDataType(const std::string &value) {
 
     if (value == "Int") {
         return DataType::INT;
-    }
-    if (value == "Float") {
-        return DataType::FLOAT;
     }
     if (value == "String") {
         return DataType::STRING;

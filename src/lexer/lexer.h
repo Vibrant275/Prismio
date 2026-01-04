@@ -34,6 +34,8 @@ private:
     Token number();
 
     Token operatorToken();
+    char peek(int offset) const;
+    char peekBack(int offset) const;
 
     bool isDivisionOperator();
 

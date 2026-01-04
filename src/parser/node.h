@@ -49,7 +49,6 @@ enum class AccessModifier
 {
     PUBLIC,
     PRIVATE,
-    PROTECTED,
     INTERNAL,
 };
 
@@ -89,7 +88,7 @@ public:
     std::vector<Node*> content;
     //    std::vector<Node*> functions;
 
-    ClassNode(std::string name, AccessModifier access = AccessModifier::PUBLIC, ClassType type = ClassType::REGULAR)
+    ClassNode(std::string name, AccessModifier access = AccessModifier::PUBLIC, ClassType type = ClassType::STRUCT)
         : Node(NodeType::CLASS), class_name(name), access_modifier(access), class_type(type)
     {
     }
@@ -104,13 +103,12 @@ class VariableDeclarationNode : public Node
 {
 public:
     std::string identifier;
-    VariableType property;
     std::string access;
     DataType dataType;
     TypeSet value;
 
     VariableDeclarationNode()
-        : Node(NodeType::VARIABLE_DECLARATION), property(VariableType::VAR),
+        : Node(NodeType::VARIABLE_DECLARATION),
           dataType(DataType::UNKNOWN)
     {
     }

@@ -2,30 +2,28 @@ import ARCore
 import prismio.net
 import skia.compositor
 
-// Single line comment
-
-/* Multi line comment */
-
-/////////
+=>
+!=
+!
+>=
+and
+->
+_
+++
++=
++-
 
 const n = 9
-~ ` #@$
 
-
-/*
 class
 clas MyClass {
 
      const MY_CONST = 100
      val myVar = 5 / 3
 
-// @#$%^&*\|?.
-
-    var char = 'a';
+    let char = 'a'
 
     func void myMethod() {
-        // method body
+
 
     }
-
-*/

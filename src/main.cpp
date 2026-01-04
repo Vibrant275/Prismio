@@ -1,12 +1,11 @@
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <string>
 #include <vector>
 #include "./lexer/lexer.h"
-#include "./parser/parser.h"
-#include "./ir/ir.h"
-#include "parser/node.h"
+// #include "parser/node.h"
+#include <iomanip>
+
 #include "utils/extension.h"
 
 using namespace std;
@@ -30,7 +29,6 @@ std::string readSourceCodeFromFile(const std::string& filePath) {
 
     return buffer;
 }
-
 
 int main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
@@ -67,21 +65,28 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Tokenization complete.\n";
 
-#ifdef DEBUG_TOKENS
     std::cout << "Tokens generated:\n";
+
+    std::cout << std::left
+          << std::setw(20) << "Token"
+          << std::setw(15) << "Type"
+          << "\n-----------------------------------\n";
+
     for (const auto& token : result.tokens)
-        std::cout << "Token: " << token.value << '\n';
-#endif
+        std::cout << std::left
+              << std::setw(20) << token.value
+              << std::setw(15) << toString(token.type)
+              << '\n';
 
-    Parser parser(result.tokens);
-    const auto ast = parser.parse();
-    std::cout << "Parsing complete.\n";
-
-    if (ast.module.size() > 3)
-        std::cout << getNodeTypeString(ast.module[3]->node_type) << '\n';
-
-    std::cout << ast.module.size() << '\n';
-
-    generateIR(ast);
+    // Parser parser(result.tokens);
+    // const auto ast = parser.parse();
+    // std::cout << "Parsing complete.\n";
+    //
+    // if (ast.module.size() > 3)
+    //     std::cout << getNodeTypeString(ast.module[3]->node_type) << '\n';
+    //
+    // std::cout << ast.module.size() << '\n';
+    //
+    // generateIR(ast);
     return EXIT_SUCCESS;
 }

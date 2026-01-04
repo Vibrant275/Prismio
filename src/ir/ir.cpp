@@ -13,9 +13,9 @@
 
 llvm::GlobalVariable* generateGlobalVariable(llvm::Module& module, const VariableDeclarationNode& varNode, llvm::Function* printfFunc, llvm::BasicBlock* entryBlock, llvm::IRBuilder<>& builder)
 {
+
     std::cout << "[IR] Creating global variable: " << varNode.identifier << std::endl;
     std::cout << "[IR] varNode.dataType: " << static_cast<int>(varNode.dataType) << ", value index: " << varNode.value.index() << std::endl;
-    std::cout << "[IR] varNode.access: " << varNode.access << ", property: " << static_cast<int>(varNode.property) << std::endl;
     if (std::holds_alternative<int>(varNode.value)) {
         std::cout << "[IR] varNode.value: " << std::get<int>(varNode.value) << std::endl;
     } else if (std::holds_alternative<std::string>(varNode.value)) {

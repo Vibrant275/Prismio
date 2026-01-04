@@ -7,15 +7,17 @@ const std::unordered_set<std::string> import = {
 };
 
 const std::unordered_set<std::string> conditionals = {
-    "null",
-
-    "true", "false",
-    "switch",
-    "case",
-    "default",
+    "match",
 
     "if",
-    "else"
+    "else",
+
+    "and",
+    "or"
+};
+
+const std::unordered_set<std::string> boolean = {
+    "true", "false"
 };
 
 const std::unordered_set<std::string> flowControl = {
@@ -27,28 +29,27 @@ const std::unordered_set<std::string> flowControl = {
 
 const std::unordered_set<std::string> loops = {
     "while",
-    "execute",
+    "loop",
     "for",
 };
 
 const std::unordered_set<std::string> accessSpecifier = {
     "private",
     "public",
-    "protected",
     "internal",
 };
 
 const std::unordered_set<std::string> declarations = {
-    "var",
-    "const",
+    "let",
 
-    "class",
-    "interface",
+    "mut",
+
+    "struct",
+    "impl",
     "enum",
-    "data",
-    "sealed",
+    "trait",
 
-    "fun"
+    "fn"
 };
 
 bool isKeyword(const std::string& value)
@@ -57,6 +58,7 @@ bool isKeyword(const std::string& value)
         import.contains(value) ||
         flowControl.contains(value) ||
         loops.contains(value) ||
+        boolean.contains(value) ||
         accessSpecifier.contains(value) ||
         declarations.contains(value) ||
         conditionals.contains(value);
@@ -90,6 +92,11 @@ bool isConditionals(const std::string& value)
 bool isImport(const std::string& value)
 {
     return import.contains(value);
+}
+
+bool isBoolean(const std::string& value)
+{
+    return boolean.contains(value);
 }
 
 bool isGlobalKeyword(const std::string& value)

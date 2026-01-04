@@ -1,10 +1,8 @@
-#include <iostream>
 #include <format>
 #include "lexer.h"
 #include "../utils/tokens.h"
 #include "../utils/extension.h"
 #include "../utils/keywords.h"
-#include "../utils/constants.h"
 #include "../utils/dataTypes.h"
 
 Lexer::Lexer(const std::string& input) : input_(input), lineNumber_(1), columnIndex_(0), currentChar_(input[0])
@@ -16,6 +14,19 @@ Token Lexer::createToken(TokenType type, const std::string& value) const
     return Token(type, value, lineNumber_);
 }
 
+
+char Lexer::peek(const int offset = 1) const
+{
+    const size_t i = columnIndex_ + offset;
+    return (i < input_.size()) ? input_[i] : '\0';
+}
+
+char Lexer::peekBack(const int offset = 1) const
+{
+    const size_t i = columnIndex_ - offset;
+    return input_[i];
+}
+
 LexerResult Lexer::tokenize()
 {
     std::vector<Token> tokens;
@@ -25,18 +36,6 @@ LexerResult Lexer::tokenize()
         if (isspace(currentChar_))
         {
             skipWhitespace();
-        }
-        else if (currentChar_ == '/')
-        {
-            if (isDivisionOperator())
-            {
-                reverse();
-                tokens.push_back(operatorToken());
-            }
-        }
-        else if (isalpha(currentChar_) || currentChar_ == '_')
-        {
-            tokens.push_back(identifierOrKeyword());
         }
         else if (isdigit(currentChar_))
         {
@@ -58,6 +57,10 @@ LexerResult Lexer::tokenize()
         else if (isOperator(currentChar_))
         {
             tokens.push_back(operatorToken());
+        }
+        else if (isalpha(currentChar_) || currentChar_ == '_')
+        {
+            tokens.push_back(identifierOrKeyword());
         }
         else
         {
@@ -85,8 +88,11 @@ void Lexer::advance()
 
 void Lexer::reverse()
 {
-    columnIndex_--;
-    currentChar_ = input_[columnIndex_];
+    if (columnIndex_ > 0)
+    {
+        columnIndex_--;
+        currentChar_ = input_[columnIndex_];
+    }
 }
 
 void Lexer::skipWhitespace()
@@ -111,26 +117,11 @@ Token Lexer::identifierOrKeyword()
         advance();
     }
 
-    if (isAccessSpecifier(value))
-        return createToken(TokenType::ACCESS_SPECIFIER, value);
+    if (isBoolean(value))
+        return createToken(TokenType::BOOL_LITERAL, value);
 
-    if (isDeclarations(value))
-        return createToken(TokenType::DECLARATIONS, value);
-
-    if (isLoop(value))
-        return createToken(TokenType::LOOPS, value);
-
-    if (isImport(value))
-        return createToken(TokenType::IMPORT, value);
-
-    if (isConditionals(value))
-        return createToken(TokenType::CONDITIONALS, value);
-
-    if (isFlowControl(value))
-        return createToken(TokenType::FLOW_CONTROL, value);
-
-    if (isDataType(value))
-        return createToken(TokenType::DATA_TYPE, value);
+    if (isKeyword(value))
+        return createToken(TokenType::KEYWORD, value);
 
     return createToken(TokenType::IDENTIFIER, value);
 }
@@ -138,90 +129,176 @@ Token Lexer::identifierOrKeyword()
 Token Lexer::number()
 {
     std::string value;
-    while (isdigit(currentChar_))
+
+    // ---- base detection ----
+    if (currentChar_ == '0' && std::string_view("xXbBoO").contains(peek()))
     {
         value += currentChar_;
         advance();
+
+        value += currentChar_; // x, X, b, B, o, O
+        advance();
+
+        while (isalnum(currentChar_) || currentChar_ == '_')
+        {
+            value += currentChar_;
+            advance();
+        }
+
+        return createToken(TokenType::NUMBER_LITERAL, value);
     }
-    return createToken(TokenType::NUMBER, value);
+
+    // ---- whole integer ----
+
+    while (
+        isdigit(currentChar_) ||
+        currentChar_ == '_' ||
+        currentChar_ == '.' ||
+        currentChar_ == 'e' ||
+        currentChar_ == 'E'
+    )
+    {
+        if (currentChar_ == '_' || currentChar_ == '.')
+        {
+            if (!isdigit(peekBack()) || !isdigit(peek()))
+            {
+                submitError(invalidTokenError("Invalid token type", currentChar_, lineNumber_));
+            }
+        }
+
+        if (currentChar_ == 'e' || currentChar_ == 'E')
+        {
+            if (
+                (std::string_view("+-").contains(peek()) || isdigit(peek())) &&
+                isdigit(peekBack())
+            )
+            {
+                if (std::string_view("+-").contains(peek()))
+                {
+                    value += currentChar_; // adds e/E
+                    advance();
+
+                    if (!isdigit(peek()))
+                    {
+                        submitError(invalidTokenError("Invalid token type", currentChar_, lineNumber_));
+                    }
+                }
+            }
+            else
+            {
+                submitError(invalidTokenError("Invalid token type", currentChar_, lineNumber_));
+            }
+        }
+        value += currentChar_;
+        advance();
+    }
+
+    return createToken(
+        TokenType::NUMBER_LITERAL,
+        value
+    );
 }
 
 Token Lexer::operatorToken()
 {
-    if (isLogicalOperator(currentChar_) && currentChar_ != '!')
-    {
-        advance();
-        return createToken(TokenType::LOGICAL_OPERATOR, std::string{currentChar_});
-    }
+    const char value = currentChar_;
+    advance();
 
-    if (isArithmeticOperator(currentChar_))
+    if (isArithmeticOperator(value))
     {
-        auto operatorValue = std::string{currentChar_};
-        advance();
-
         if (currentChar_ == '=')
         {
-            operatorValue += currentChar_;
+            std::string token = {value};
+            token += currentChar_;
+
             advance();
-            return createToken(TokenType::ASSIGNMENT_OPERATOR, operatorValue);
+            return createToken(TokenType::ASSIGNMENT_OPERATOR, token);
         }
 
-        if (operatorValue == "+" && currentChar_ == '+')
+        if (
+            (value == '+' && currentChar_ == '+') ||
+            (value == '-' && currentChar_ == '-')
+        )
         {
-            operatorValue += currentChar_;
+            std::string token = {value};
+            token += currentChar_;
+
             advance();
-            return createToken(TokenType::UNARY_OPERATOR, operatorValue);
+            return createToken(TokenType::UNARY_OPERATOR, token);
         }
 
-        if (operatorValue == "-" && currentChar_ == '-')
+        if (value == '-' and currentChar_ == '>')
         {
-            operatorValue += currentChar_;
+            std::string token = {value};
+            token += currentChar_;
+
             advance();
-            return createToken(TokenType::UNARY_OPERATOR, operatorValue);
+            return createToken(TokenType::ARROW, {token});
         }
 
-        if (operatorValue == "-" && currentChar_ == '>')
-        {
-            operatorValue += currentChar_;
-            advance();
-            return createToken(TokenType::SEPARATOR, operatorValue);
-        }
-
-        return createToken(TokenType::ARITHMETIC_OPERATOR, operatorValue);
+        return createToken(TokenType::ARITHMETIC_OPERATOR, {value});
     }
 
-    if (currentChar_ == '=')
+    if (value == '!')
     {
-        auto operatorValue = std::string{currentChar_};
-        advance();
+        if (currentChar_ == '=')
+        {
+            std::string token = {value};
+            token += currentChar_;
+            advance();
+            return createToken(TokenType::RELATIONAL_OPERATOR, token);
+        }
+        return createToken(TokenType::NEGATION, std::string{value});
+    }
+
+    if (value == '&')
+        return createToken(TokenType::AMPERSAND, {value});
+
+    if (value == '|')
+        return createToken(TokenType::BITWISE_OR, {value});
+
+    if (value == '_')
+        return createToken(TokenType::UNDERSCORE, {value});
+
+    if (value == '=')
+    {
+        auto operatorValue = std::string{value};
 
         if (currentChar_ == '=')
         {
             operatorValue += currentChar_;
             advance();
             return createToken(TokenType::RELATIONAL_OPERATOR, operatorValue);
+        }
+
+        if (currentChar_ == '>')
+        {
+            operatorValue += currentChar_;
+            advance();
+            return createToken(TokenType::FAT_ARROW, operatorValue);
         }
 
         return createToken(TokenType::ASSIGNMENT_OPERATOR, operatorValue);
     }
 
-    if (currentChar_ == '!')
+    if (value == '<')
     {
-        auto operatorValue = std::string{currentChar_};
-        advance();
+        auto operatorValue = std::string{value};
+
         if (currentChar_ == '=')
         {
             operatorValue += currentChar_;
             advance();
             return createToken(TokenType::RELATIONAL_OPERATOR, operatorValue);
         }
-        return createToken(TokenType::LOGICAL_OPERATOR, operatorValue);
+
+        return createToken(TokenType::RELATIONAL_OPERATOR, operatorValue);
     }
 
-    if (currentChar_ == '<')
+    if (value == '>')
     {
-        auto operatorValue = std::string{currentChar_};
-        advance();
+        auto operatorValue = std::string{value};
+
         if (currentChar_ == '=')
         {
             operatorValue += currentChar_;
@@ -231,77 +308,7 @@ Token Lexer::operatorToken()
         return createToken(TokenType::RELATIONAL_OPERATOR, operatorValue);
     }
 
-    if (currentChar_ == '>')
-    {
-        auto operatorValue = std::string{currentChar_};
-        advance();
-        if (currentChar_ == '=')
-        {
-            operatorValue += currentChar_;
-            advance();
-            return createToken(TokenType::RELATIONAL_OPERATOR, operatorValue);
-        }
-        return createToken(TokenType::RELATIONAL_OPERATOR, operatorValue);
-    }
-
-    advance();
     return createToken(TokenType::UNKNOWN, std::string{currentChar_});
-}
-
-bool Lexer::isDivisionOperator()
-{
-    std::string value;
-    bool returnValue = false;
-
-    while (currentChar_ == '/')
-    {
-        value += currentChar_;
-        advance();
-    }
-
-    if (value == "//")
-        // single-line comment
-        while (currentChar_ != '\n')
-        {
-            advance();
-        }
-    else if (value == "/" && currentChar_ == '*')
-    {
-        bool stringState = false;
-        // multi-line comment
-        while (true)
-        {
-            advance();
-            if (currentChar_ == '"')
-                stringState = !stringState;
-
-            if (
-                currentChar_ == '*' &&
-                (columnIndex_ + 1 < input_.size()) &&
-                input_[columnIndex_ + 1] == '/'
-                && !stringState
-            )
-            {
-                advance(); // skip the '*'
-                advance(); // skip the '/'
-                break;
-            }
-
-            if (currentChar_ == '\0')
-                submitError("Syntax error: Multi-line comment /* ... not closed. [ */ ] not found");
-        }
-    }
-    else if (value == "/")
-    {
-        returnValue = true;
-    }
-    else
-    {
-        while (currentChar_ != '\n')
-            advance();
-    }
-
-    return returnValue;
 }
 
 Token Lexer::stringLiteral()
@@ -322,7 +329,7 @@ Token Lexer::stringLiteral()
     }
 
     advance(); // skip the closing quote
-    return createToken(TokenType::STRING, value);
+    return createToken(TokenType::STRING_LITERAL, value);
 }
 
 Token Lexer::separatorToken() const
@@ -354,7 +361,7 @@ Token Lexer::charLiteral()
     }
 
     advance();
-    return createToken(TokenType::CHAR, value);
+    return createToken(TokenType::CHAR_LITERAL, value);
 }
 
 void Lexer::submitError(const std::string& error)

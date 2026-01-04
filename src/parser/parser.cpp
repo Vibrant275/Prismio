@@ -191,7 +191,7 @@ ParseNode Parser::parseConst()
     advance();
 
     // Parse value
-    expect(TokenType::NUMBER, "");
+    expect(TokenType::NUMBER_LITERAL, "");
     std::string value = currentToken().value;
     advance();
 
@@ -201,7 +201,7 @@ ParseNode Parser::parseConst()
     ParseNode constNode(Token{TokenType::KEYWORD, "const", currentToken().line});
     constNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, type, currentToken().line}));
     constNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, name, currentToken().line}));
-    constNode.addChild(ParseNode(Token{TokenType::NUMBER, value, currentToken().line}));
+    constNode.addChild(ParseNode(Token{TokenType::NUMBER_LITERAL, value, currentToken().line}));
 
     return constNode;
 }
@@ -225,7 +225,7 @@ ParseNode Parser::parseVar()
     advance();
 
     // Parse value
-    expect(TokenType::NUMBER, "");
+    expect(TokenType::NUMBER_LITERAL, "");
     std::string value = currentToken().value;
     advance();
 
@@ -235,7 +235,7 @@ ParseNode Parser::parseVar()
     ParseNode varNode(Token{TokenType::KEYWORD, "val", currentToken().line});
     varNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, type, currentToken().line}));
     varNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, name, currentToken().line}));
-    varNode.addChild(ParseNode(Token{TokenType::NUMBER, value, currentToken().line}));
+    varNode.addChild(ParseNode(Token{TokenType::NUMBER_LITERAL, value, currentToken().line}));
 
     return varNode;
 }
@@ -290,7 +290,7 @@ ParseNode Parser::parseMethod()
 
 void Parser::collectImportStatements()
 {
-    while (currentToken().type == TokenType::KEYWORD && currentToken().value == "import")
+    while (currentToken().type == TokenType::IMPORT)
     {
         advance();
 
@@ -349,7 +349,6 @@ void Parser::handleVariableDeclaration(std::string accessSpecifier)
 {
     auto node = std::make_unique<VariableDeclarationNode>();
     node->access = std::move(accessSpecifier);
-    node->property = getVariableType(currentToken().value);
     advance();
 
     if (currentToken().type == TokenType::IDENTIFIER)
@@ -363,9 +362,9 @@ void Parser::handleVariableDeclaration(std::string accessSpecifier)
 
             if (
                 currentToken().type == TokenType::IDENTIFIER ||
-                currentToken().type == TokenType::NUMBER ||
-                currentToken().type == TokenType::STRING ||
-                currentToken().type == TokenType::CHAR
+                currentToken().type == TokenType::NUMBER_LITERAL ||
+                currentToken().type == TokenType::STRING_LITERAL ||
+                currentToken().type == TokenType::CHAR_LITERAL
                 // currentToken().type == TokenType::BOOLEAN
             )
             {
@@ -469,16 +468,16 @@ void Parser::handleFunctionParameters(FunctionNode* function_node)
             expect(TokenType::SEPARATOR, ":");
             advance();
 
-            if (currentToken().type == TokenType::DATA_TYPE)
-            {
-                DataType paramType = getDataType(currentToken().value);
-                function_node->params.push_back(new FunctionParameterNode(paramName, paramType));
-            }
-            else
-            {
-                displayError("Invalid data type", currentToken());
-                exit(1);
-            }
+            // if (currentToken().type == TokenType::DATA_TYPE)
+            // {
+            //     DataType paramType = getDataType(currentToken().value);
+            //     function_node->params.push_back(new FunctionParameterNode(paramName, paramType));
+            // }
+            // else
+            // {
+            //     displayError("Invalid data type", currentToken());
+            //     exit(1);
+            // }
 
             advance();
 

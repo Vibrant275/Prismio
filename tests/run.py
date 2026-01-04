@@ -4,7 +4,7 @@ import subprocess
 
 # Paths
 base_dir = os.path.abspath(os.path.dirname(__file__))
-executable = os.path.join(base_dir, "..", "out", "Release", "Prismio.exe")
+executable = os.path.join(base_dir, "..", "cmake-build-release", "Prismio.exe")
 test_file = os.path.join(base_dir, "test.psm")
 
 # Check for executable
