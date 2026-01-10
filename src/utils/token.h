@@ -34,7 +34,6 @@ enum class TokenType
     DECLARATIONS,
     FLOW_CONTROL,
     LOOPS,
-    IMPORT,
     CONDITIONALS
 };
 
@@ -76,8 +75,6 @@ inline std::string toString(const TokenType type)
         return "FLOW_CONTROL";
     case TokenType::LOOPS:
         return "LOOPS";
-    case TokenType::IMPORT:
-        return "IMPORT";
     case TokenType::CONDITIONALS:
         return "CONDITIONALS";
     case TokenType::NEGATION:

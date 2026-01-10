@@ -6,6 +6,7 @@
 // #include "parser/node.h"
 #include <iomanip>
 
+#include "parser/parser.h"
 #include "utils/extension.h"
 
 using namespace std;
@@ -65,21 +66,21 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Tokenization complete.\n";
 
-    std::cout << "Tokens generated:\n";
+    // std::cout << "Tokens generated:\n";
+    //
+    // std::cout << std::left
+    //       << std::setw(20) << "Token"
+    //       << std::setw(15) << "Type"
+    //       << "\n-----------------------------------\n";
+    //
+    // for (const auto& token : result.tokens)
+    //     std::cout << std::left
+    //           << std::setw(20) << token.value
+    //           << std::setw(15) << toString(token.type)
+    //           << '\n';
 
-    std::cout << std::left
-          << std::setw(20) << "Token"
-          << std::setw(15) << "Type"
-          << "\n-----------------------------------\n";
-
-    for (const auto& token : result.tokens)
-        std::cout << std::left
-              << std::setw(20) << token.value
-              << std::setw(15) << toString(token.type)
-              << '\n';
-
-    // Parser parser(result.tokens);
-    // const auto ast = parser.parse();
+    Parser parser(result.tokens);
+    const auto ast = parser.parse();
     // std::cout << "Parsing complete.\n";
     //
     // if (ast.module.size() > 3)

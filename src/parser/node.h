@@ -3,17 +3,25 @@
 
 #include <string>
 #include <vector>
-#include <map>
-#include <iostream>
-#include <any>
-#include <variant>
 #include <memory>
+
 #include "../utils/class_type.h"
 #include "../utils/dataTypes.h"
-#include "../utils/declaration.h"
+#include "../utils/token.h"
 
-enum class DataType;
+enum class TokenType;
+// --------------------------------------------------
+// Source location (for diagnostics)
+// --------------------------------------------------
+struct SourceLocation
+{
+    std::size_t line = 0;
+    std::size_t column = 0;
+};
 
+// --------------------------------------------------
+// Node types
+// --------------------------------------------------
 enum class NodeType
 {
     MODULE,
@@ -21,121 +29,134 @@ enum class NodeType
     CLASS,
     FUNCTION,
     FUNCTION_PARAMETER,
-    VARIABLE_DECLARATION
+    VARIABLE_DECL
 };
 
-inline std::string getNodeTypeString(const NodeType type)
-{
-    switch (type)
-    {
-        case NodeType::MODULE:
-            return "MODULE";
-        case NodeType::IMPORT_STATEMENT:
-            return "IMPORT_STATEMENT";
-        case NodeType::CLASS:
-            return "CLASS";
-        case NodeType::FUNCTION:
-            return "FUNCTION";
-        case NodeType::FUNCTION_PARAMETER:
-            return "FUNCTION_PARAMETER";
-        case NodeType::VARIABLE_DECLARATION:
-            return "VARIABLE_DECLARATION";
-        default:
-            return "Unknown";
-    }
-}
-
+// --------------------------------------------------
+// Access modifiers
+// --------------------------------------------------
 enum class AccessModifier
 {
     PUBLIC,
     PRIVATE,
-    INTERNAL,
+    INTERNAL
 };
 
-
+// --------------------------------------------------
+// Base AST node
+// --------------------------------------------------
 class Node
 {
 public:
-    NodeType node_type;
+    const NodeType type;
+    SourceLocation loc;
+
+    explicit Node(NodeType type) : type(type)
+    {
+    }
 
     virtual ~Node() = default;
-
-    Node(NodeType type) : node_type(type){}
 };
 
-class ModuleNode : public Node
+// --------------------------------------------------
+// Module (root)
+// --------------------------------------------------
+class ModuleNode final : public Node
 {
 public:
-    std::vector<std::unique_ptr<Node>> module;
-    ModuleNode() : Node(NodeType::MODULE){}
-};
+    std::vector<std::unique_ptr<Node>> statements;
 
-class ImportStatementNode : public Node
-{
-public:
-    std::vector<std::string> module_names;
-
-    ImportStatementNode() : Node(NodeType::IMPORT_STATEMENT){}
-};
-
-class ClassNode : public Node
-{
-public:
-    std::string class_name;
-    AccessModifier access_modifier;
-    ClassType class_type;
-
-    std::vector<Node*> content;
-    //    std::vector<Node*> functions;
-
-    ClassNode(std::string name, AccessModifier access = AccessModifier::PUBLIC, ClassType type = ClassType::STRUCT)
-        : Node(NodeType::CLASS), class_name(name), access_modifier(access), class_type(type)
-    {
-    }
-
-    void addContent(Node* content)
-    {
-        this->content.push_back(content);
-    }
-};
-
-class VariableDeclarationNode : public Node
-{
-public:
-    std::string identifier;
-    std::string access;
-    DataType dataType;
-    TypeSet value;
-
-    VariableDeclarationNode()
-        : Node(NodeType::VARIABLE_DECLARATION),
-          dataType(DataType::UNKNOWN)
+    ModuleNode() : Node(NodeType::MODULE)
     {
     }
 };
 
-class FunctionNode : public Node
+// --------------------------------------------------
+// Import statement
+// --------------------------------------------------
+class ImportStatementNode final : public Node
 {
 public:
-    std::string func_name;
-    std::vector<Node*> params;
-    std::vector<Node*> body;
+    std::vector<std::string> module_path;
 
-    FunctionNode(std::string name) : Node(NodeType::FUNCTION), func_name(name)
+    ImportStatementNode()
+        : Node(NodeType::IMPORT_STATEMENT)
     {
     }
 };
 
-class FunctionParameterNode : public Node
+// --------------------------------------------------
+// Class / Struct / Enum
+// --------------------------------------------------
+class ClassNode final : public Node
 {
 public:
-    std::string identifier;
-    DataType dataType;
+    std::string name;
+    AccessModifier access;
+    ClassType kind;
 
-    FunctionParameterNode(std::string identifier, DataType dataType) : Node(NodeType::FUNCTION_PARAMETER),
-                                                                       identifier(identifier), dataType(dataType)
+    std::vector<std::unique_ptr<Node>> members;
+
+    ClassNode(
+        std::string name,
+        AccessModifier access = AccessModifier::PUBLIC,
+        ClassType kind = ClassType::STRUCT
+    )
+        : Node(NodeType::CLASS),
+          name(std::move(name)),
+          access(access),
+          kind(kind)
     {
     }
 };
 
-#endif
+// --------------------------------------------------
+// Variable declaration (let / let mut)
+// --------------------------------------------------
+class VariableDeclNode final : public Node
+{
+public:
+    std::string name;
+    std::string value;
+    bool is_mutable = false;
+    TokenType type;
+
+    VariableDeclNode() : Node(NodeType::VARIABLE_DECL), type(TokenType::UNKNOWN)
+    {
+    }
+};
+
+// --------------------------------------------------
+// Function
+// --------------------------------------------------
+class FunctionNode final : public Node
+{
+public:
+    std::string name;
+    std::vector<std::unique_ptr<Node>> parameters;
+    std::vector<std::unique_ptr<Node>> body;
+
+    explicit FunctionNode()
+        : Node(NodeType::FUNCTION)
+    {
+    }
+};
+
+// --------------------------------------------------
+// Function parameter
+// --------------------------------------------------
+class FunctionParameterNode final : public Node
+{
+public:
+    std::string name;
+    DataType type;
+
+    FunctionParameterNode(std::string name, DataType type)
+        : Node(NodeType::FUNCTION_PARAMETER),
+          name(std::move(name)),
+          type(type)
+    {
+    }
+};
+
+#endif // PRISMIO_NODE_H

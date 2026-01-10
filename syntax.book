@@ -4,20 +4,6 @@
 ///     -> Single line Info/ Documentation
 /**/    -> Multi-Line Info/Documentation
 
-2. Functions:
-
-i.   fn add(a: Int, b: Int) -> Int = a + b
-
-ii.  fn add(a: Int, b: Int) -> Int = (a + b)
-
-iii. fn add(a: Int, b: Int) -> Int { // explicit return
-       return a + b;                 // return is mandatory
-     }
-
-iv.  fn add(a: Int, b: Int) -> Int = {
-       a+b                           // implicit return
-     }                               // return is restricted
-
 3. Access Modifiers:
 
 private       ->      Same class/file
@@ -36,13 +22,6 @@ fn add(a: Int, b: Int, c: Int) -> Int = a + b + c
      IMPL
      ENUM
      TRAIT
-
-6. Import
-
-import lang.internal.files
-import plugin.decoder
-
-// Doesn't support wildcards
 
 7. Relational operator
 

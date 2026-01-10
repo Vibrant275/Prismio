@@ -2,6 +2,7 @@
 #define PRISMIO_DECLARATION_H
 
 #include <string>
+#include <variant>
 
 #include "dataTypes.h"
 #include "token.h"

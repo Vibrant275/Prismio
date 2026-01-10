@@ -37,12 +37,14 @@ private:
 
     bool isValidKeyword(const std::string& value);
 
+    static void printModuleNames();
     void collectImportStatements();
 
     void handleDeclaration(const std::string& accessSpecifier);
-    void handleVariableDeclaration(std::string accessSpecifier);
+    void handleVariableDeclaration();
 
-    void handleFunctionBody(FunctionNode* function_node);
+    std::vector<std::unique_ptr<Node>> handleFunctionBody();
+    std::vector<std::unique_ptr<Node>> collectFunctionParameters();
     void handleFunction();
     void handleFunctionParameters(FunctionNode* function_node);
     void handleClasses();

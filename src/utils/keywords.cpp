@@ -33,23 +33,18 @@ const std::unordered_set<std::string> loops = {
     "for",
 };
 
-const std::unordered_set<std::string> accessSpecifier = {
-    "private",
-    "public",
-    "internal",
-};
-
 const std::unordered_set<std::string> declarations = {
     "let",
-
-    "mut",
-
     "struct",
     "impl",
     "enum",
     "trait",
-
     "fn"
+};
+
+const std::unordered_set<std::string> property =
+{
+    "mut"
 };
 
 bool isKeyword(const std::string& value)
@@ -59,14 +54,9 @@ bool isKeyword(const std::string& value)
         flowControl.contains(value) ||
         loops.contains(value) ||
         boolean.contains(value) ||
-        accessSpecifier.contains(value) ||
         declarations.contains(value) ||
+        property.contains(value) ||
         conditionals.contains(value);
-}
-
-bool isAccessSpecifier(const std::string& value)
-{
-    return accessSpecifier.contains(value);
 }
 
 bool isDeclarations(const std::string& value)
@@ -97,11 +87,4 @@ bool isImport(const std::string& value)
 bool isBoolean(const std::string& value)
 {
     return boolean.contains(value);
-}
-
-bool isGlobalKeyword(const std::string& value)
-{
-    return
-        accessSpecifier.contains(value) ||
-        declarations.contains(value);
 }

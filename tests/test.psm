@@ -1,29 +1,5 @@
 import ARCore
 import prismio.net
-import skia.compositor
+import let.compositor.fn
 
-=>
-!=
-!
->=
-and
-->
-_
-++
-+=
-+-
-
-const n = 9
-
-class
-clas MyClass {
-
-     const MY_CONST = 100
-     val myVar = 5 / 3
-
-    let char = 'a'
-
-    func void myMethod() {
-
-
-    }
+String string int

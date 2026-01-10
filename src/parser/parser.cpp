@@ -70,24 +70,25 @@ ModuleNode Parser::parse()
 
     while (position < tokens.size())
     {
-        if (isGlobalKeyword(currentToken().value))
+        if (isDeclarations(currentToken().value))
         {
-            std::string accessSpecifier = "public";
+            if (currentToken().value == "let")
+                handleVariableDeclaration();
 
-            if (isAccessSpecifier(currentToken().value))
-            {
-                accessSpecifier = currentToken().value;
-                advance();
+            if (currentToken().value == "fn")
+                handleFunction();
 
-                if (!isDeclarations(currentToken().value))
-                {
-                    displayError(IAD, currentToken());
-                    exit(1);
-                }
-
-                handleDeclaration(accessSpecifier);
-            }
-            else handleDeclaration(accessSpecifier);
+            // if (currentToken().value == "struct")
+            //     handleStruct();
+            //
+            // if (currentToken().value == "enum")
+            //     handleEnum();
+            //
+            // if (currentToken().value == "trait")
+            //     handleTrait();
+            //
+            // if (currentToken().value == "impl")
+            //     handleImplementation();
         }
         else
         {
@@ -288,15 +289,34 @@ ParseNode Parser::parseMethod()
     return methodNode;
 }
 
+void Parser::printModuleNames()
+{
+    for (const auto& statements : root.statements)
+    {
+        if (statements->type == NodeType::IMPORT_STATEMENT)
+        {
+            const auto* importStatements = dynamic_cast<const ImportStatementNode*>(statements.get());
+
+            std::cout << "import ";
+
+            for (const auto& i : importStatements->module_path)
+            {
+                std::cout << i << "\n";
+            }
+            std::cout << "\n";
+        }
+    }
+}
+
 void Parser::collectImportStatements()
 {
-    while (currentToken().type == TokenType::IMPORT)
+    while (currentToken().value == "import")
     {
         advance();
 
         std::vector<std::string> moduleNameParts;
 
-        while (currentToken().type == TokenType::IDENTIFIER)
+        while (currentToken().type == TokenType::IDENTIFIER or currentToken().type == TokenType::KEYWORD)
         {
             moduleNameParts.push_back(currentToken().value);
             advance();
@@ -305,139 +325,145 @@ void Parser::collectImportStatements()
             {
                 advance();
 
-                if (currentToken().type != TokenType::IDENTIFIER)
+                if (currentToken().type != TokenType::IDENTIFIER and currentToken().type != TokenType::KEYWORD)
                 {
                     displayError("Unexpected token", currentToken());
                     exit(0);
                 }
             }
-            else if (currentToken().type == TokenType::IDENTIFIER)
-            {
-                displayError("Missing '.' in import statement.", currentToken());
-                exit(0);
-            }
         }
         auto importStatement = std::make_unique<ImportStatementNode>();
-        importStatement->module_names = moduleNameParts;
-        root.module.push_back(std::move(importStatement));
-
-        /*
-        importStatement.printModuleNames();
-        std::cout << endl;
-        */
+        importStatement->module_path = moduleNameParts;
+        root.statements.push_back(std::move(importStatement));
     }
     std::cout << "Finished collecting import statements." << std::endl;
 }
 
-void Parser::handleDeclaration(const std::string& accessSpecifier)
+void Parser::handleVariableDeclaration()
 {
-    if (currentToken().value == "const" || currentToken().value == "var")
-    {
-        handleVariableDeclaration(accessSpecifier);
-    }
-    else if (currentToken().value == "fun")
-    {
-        handleFunction();
-    }
-    else
-    {
-        handleClasses();
-    }
-}
+    advance();
+    bool isMutable = false;
 
-void Parser::handleVariableDeclaration(std::string accessSpecifier)
-{
-    auto node = std::make_unique<VariableDeclarationNode>();
-    node->access = std::move(accessSpecifier);
+    if (currentToken().value == "mut")
+    {
+        isMutable = true;
+        advance();
+    }
+
+    expect(TokenType::IDENTIFIER);
+
+    std::string identifier = currentToken().value;
     advance();
 
-    if (currentToken().type == TokenType::IDENTIFIER)
+    if (currentToken().value != "=")
     {
-        node->identifier = currentToken().value;
-        advance();
+        std::cerr << "Error: Expected token type " << static_cast<int>(currentToken().type)
+            << " at line " << currentToken().line
+            << ", but got " << static_cast<int>(currentToken().type)
+            << " at line " << currentToken().line << std::endl;
 
-        if (currentToken().value == "=")
+        exit(1);
+    }
+
+    advance();
+
+    TokenType tokenType = currentToken().type;
+    std::string value = currentToken().value;
+
+    advance();
+
+    auto node = std::make_unique<VariableDeclNode>();
+
+    node->name = std::move(identifier);
+    node->value = std::move(value);
+    node->is_mutable = isMutable;
+    node->type = tokenType;
+
+    root.statements.push_back(std::move(node));
+}
+
+vector<unique_ptr<Node>> Parser::collectFunctionParameters()
+{
+    std::vector<std::unique_ptr<Node>> parameters;
+
+    while (currentToken().value != ")")
+    {
+        if (currentToken().type == TokenType::IDENTIFIER)
         {
+            std::string paramName = currentToken().value;
+            DataType type;
             advance();
 
-            if (
-                currentToken().type == TokenType::IDENTIFIER ||
-                currentToken().type == TokenType::NUMBER_LITERAL ||
-                currentToken().type == TokenType::STRING_LITERAL ||
-                currentToken().type == TokenType::CHAR_LITERAL
-                // currentToken().type == TokenType::BOOLEAN
-            )
-            {
-                node->value = currentToken().value;
+            expect(TokenType::SEPARATOR, ":");
+            advance();
 
-                if (node->dataType == DataType::UNKNOWN)
-                {
-                    node->dataType = getDataTypeFromTokenType(currentToken().type);
-                }
+            if (isDataType(currentToken().value))
+            {
+                type = getDataType(currentToken().value);
                 advance();
             }
             else
             {
-                displayError("Invalid data", currentToken());
+                displayError("Invalid data type", currentToken());
                 exit(1);
             }
+
+            if (currentToken().type == TokenType::SEPARATOR && currentToken().value == ",")
+                advance();
+
+            auto paramNode = std::make_unique<FunctionParameterNode>(paramName, type);
+            parameters.push_back(std::move(paramNode));
+        }
+        else if (currentToken().type == TokenType::KEYWORD)
+        {
+            displayError("Keywords cannot be used as function parameters", currentToken());
+            exit(1);
         }
         else
         {
-            displayError("Variable must be initialized.", currentToken());
+            displayError("Invalid function parameter name", currentToken());
             exit(1);
         }
     }
-    else
-    {
-        displayError("Invalid identifier", currentToken());
-        exit(1);
-    }
 
-    root.module.push_back(std::move(node));
+    return parameters;
 }
-
 
 void Parser::handleFunction()
 {
     advance();
 
-    if (currentToken().type == TokenType::IDENTIFIER)
-    {
-        string functionName = currentToken().value;
-        auto functionNode = FunctionNode(functionName);
+    expect(TokenType::IDENTIFIER);
+    std::string functionName = currentToken().value;
+    advance();
 
-        advance();
+    expect(TokenType::SEPARATOR, "(");
+    advance();
 
-        if (currentToken().value == "(")
-        {
-            advance();
-            handleFunctionParameters(&functionNode);
-            advance(); // Skip ")"
-            advance(); // Skip "{"
-        }
-        else if (currentToken().value == "{")
-        {
-            advance();
-        }
-        else
-        {
-            displayError("Invalid function syntax", currentToken());
-            exit(1);
-        }
+    auto parameters = collectFunctionParameters();
 
-        handleFunctionBody(&functionNode);
-        root.module.emplace_back(&functionNode);
-    }
-    else
-    {
-        displayError("Invalid function name", currentToken());
-        exit(1);
-    }
+    expect(TokenType::SEPARATOR, ")");
+    advance();
+
+    auto functionNode = std::make_unique<FunctionNode>();
+    functionNode->parameters = std::move(parameters);
+    functionNode->name = functionName;
+
+    auto functionBody = handleFunctionBody();
+    functionNode->body = std::move(functionBody);
+
+    root.statements.push_back(std::move(functionNode));
 }
 
-void Parser::handleFunctionBody(FunctionNode* function_node)
+vector<unique_ptr<Node>> Parser::handleFunctionBody()
 {
+
+    if (currentToken().value == "{")
+    {
+        advance();
+
+    }
+
     while (currentToken().value != "}")
     {
         if (currentToken().type == TokenType::KEYWORD)
@@ -451,58 +477,4 @@ void Parser::handleFunctionBody(FunctionNode* function_node)
             exit(1);
         }
     }
-}
-
-void Parser::handleFunctionParameters(FunctionNode* function_node)
-{
-    // Modifying the function_node here will affect the original, as the pointer
-    // allows direct access to the original object.
-
-    while (currentToken().value != ")")
-    {
-        if (currentToken().type == TokenType::IDENTIFIER)
-        {
-            std::string paramName = currentToken().value;
-            advance();
-
-            expect(TokenType::SEPARATOR, ":");
-            advance();
-
-            // if (currentToken().type == TokenType::DATA_TYPE)
-            // {
-            //     DataType paramType = getDataType(currentToken().value);
-            //     function_node->params.push_back(new FunctionParameterNode(paramName, paramType));
-            // }
-            // else
-            // {
-            //     displayError("Invalid data type", currentToken());
-            //     exit(1);
-            // }
-
-            advance();
-
-            if (currentToken().type == TokenType::SEPARATOR && currentToken().value == ",")
-                advance();
-
-            if (currentToken().type == TokenType::IDENTIFIER)
-            {
-                displayError("Expecting a semi-colon here", currentToken());
-                exit(1);
-            }
-        }
-        else if (currentToken().type == TokenType::KEYWORD)
-        {
-            displayError("Keywords cannot be used as function parameters", currentToken());
-            exit(1);
-        }
-        else
-        {
-            displayError("Invalid function parameter name", currentToken());
-            exit(1);
-        }
-    }
-}
-
-void Parser::handleClasses()
-{
 }
