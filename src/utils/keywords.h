@@ -7,6 +7,7 @@
 bool isKeyword(const std::string& value);
 bool isAccessSpecifier(const std::string &value);
 bool isDeclarations(const std::string &value);
+bool isFunctionStarter(const std::string &value);
 bool isFunction(const std::string &value);
 bool isLoop(const std::string& value);
 bool isFlowControl(const std::string& value);

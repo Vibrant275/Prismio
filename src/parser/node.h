@@ -143,6 +143,83 @@ public:
 };
 
 // --------------------------------------------------
+// Assignment Tree
+// --------------------------------------------------
+class AssignmentTree final : public Node
+{
+public:
+    std::vector<std::unique_ptr<Node>> tree;
+
+    AssignmentTree()
+        : Node(NodeType::FUNCTION)
+    {
+    }
+};
+
+enum class AssignmentTreeNodeType
+{
+    STRING_LITERAL,
+    BOOL_LITERAL,
+    NUMBER_LITERAL,
+    CHAR_LITERAL,
+    IDENTIFIER,
+    FUNCTION,
+    ARITHMETIC_OPERATOR
+};
+
+
+inline AssignmentTreeNodeType getAssignmentTreeNodeTypeFromTokenType(const TokenType& tokenType)
+{
+    switch (tokenType)
+    {
+    case TokenType::STRING_LITERAL:
+        return AssignmentTreeNodeType::STRING_LITERAL;
+    case TokenType::BOOL_LITERAL:
+        return AssignmentTreeNodeType::BOOL_LITERAL;
+    case TokenType::NUMBER_LITERAL:
+        return AssignmentTreeNodeType::NUMBER_LITERAL;
+    case TokenType::CHAR_LITERAL:
+        return AssignmentTreeNodeType::CHAR_LITERAL;
+    case TokenType::IDENTIFIER:
+        return AssignmentTreeNodeType::IDENTIFIER;
+    case TokenType::ARITHMETIC_OPERATOR:
+        return AssignmentTreeNodeType::ARITHMETIC_OPERATOR;
+    default:
+        return AssignmentTreeNodeType::FUNCTION;
+    }
+}
+
+// --------------------------------------------------
+// Assignment Tree Node
+// --------------------------------------------------
+class AssignmentTreeNode final : public Node
+{
+public:
+    std::string value;
+    AssignmentTreeNodeType type;
+
+    AssignmentTreeNode()
+        : Node(NodeType::FUNCTION), type()
+    {
+    }
+};
+
+// --------------------------------------------------
+// Assignment Body
+// --------------------------------------------------
+class AssignmentBody final : public Node
+{
+public:
+    std::string identifier;
+    std::unique_ptr<AssignmentTree> tree;
+
+    AssignmentBody()
+        : Node(NodeType::FUNCTION)
+    {
+    }
+};
+
+// --------------------------------------------------
 // Function parameter
 // --------------------------------------------------
 class FunctionParameterNode final : public Node

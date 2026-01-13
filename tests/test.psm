@@ -2,4 +2,4 @@ import ARCore
 import prismio.net
 import let.compositor.fn
 
-String string int
+fn main()

@@ -47,6 +47,20 @@ const std::unordered_set<std::string> property =
     "mut"
 };
 
+const std::unordered_set<std::string> functionStarters =
+{
+    "let",
+    "if",
+    "match",
+    "for",
+    "while",
+    "loop",
+    "print",
+    "return"
+};
+
+
+
 bool isKeyword(const std::string& value)
 {
     return
@@ -62,6 +76,11 @@ bool isKeyword(const std::string& value)
 bool isDeclarations(const std::string& value)
 {
     return declarations.contains(value);
+}
+
+bool isFunctionStarter(const std::string& value)
+{
+    return functionStarters.contains(value);
 }
 
 bool isLoop(const std::string& value)

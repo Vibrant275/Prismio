@@ -7,16 +7,11 @@
 #include "../utils/declaration.h"
 #include "../utils/dataTypes.h"
 #include <iostream>
-#include <unordered_set>
-
-using namespace std;
 
 auto root = ModuleNode();
 
 Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens), position(0)
 {
-    keywordHandlers["class"] = [this]() { return parseClass(); };
-    keywordHandlers["enum"] = [this]() { return parseEnum(); };
 }
 
 Token Parser::currentToken()
@@ -73,7 +68,10 @@ ModuleNode Parser::parse()
         if (isDeclarations(currentToken().value))
         {
             if (currentToken().value == "let")
-                handleVariableDeclaration();
+            {
+                auto variableDeclaration = handleVariableDeclaration();
+                root.statements.push_back(std::move(variableDeclaration));
+            }
 
             if (currentToken().value == "fn")
                 handleFunction();
@@ -98,195 +96,6 @@ ModuleNode Parser::parse()
     }
 
     return std::move(root);
-}
-
-ParseNode Parser::parseClass()
-{
-    expect(TokenType::KEYWORD, "class");
-
-    // Parse class name
-    expect(TokenType::IDENTIFIER, ""); // Expecting an identifier
-    std::string className = currentToken().value;
-    advance();
-
-    // Parse class body
-    expect(TokenType::SEPARATOR, "{");
-    advance();
-
-    ParseNode classNode(Token{TokenType::KEYWORD, "class", currentToken().line});
-    classNode.token.value = className;
-
-    while (currentToken().type != TokenType::SEPARATOR || currentToken().value != "}")
-    {
-        if (currentToken().value == "const")
-        {
-            classNode.addChild(parseConst());
-        }
-        else if (currentToken().value == "val")
-        {
-            classNode.addChild(parseVar());
-        }
-        else if (currentToken().value == "func")
-        {
-            classNode.addChild(parseMethod());
-        }
-        else
-        {
-            displayError("Unexpected token", currentToken());
-        }
-    }
-    expect(TokenType::SEPARATOR, "}");
-    advance();
-
-    return classNode;
-}
-
-ParseNode Parser::parseEnum()
-{
-    expect(TokenType::KEYWORD, "enum");
-
-    // Parse enum name
-    expect(TokenType::IDENTIFIER, ""); // Expecting an identifier
-    Token enumName = currentToken();
-    advance();
-
-    // Parse enum body
-    expect(TokenType::SEPARATOR, "{");
-    advance();
-
-    ParseNode enumNode(enumName);
-    while (currentToken().type != TokenType::SEPARATOR || currentToken().value != "}")
-    {
-        enumNode.addChild(parseStatement());
-    }
-
-    expect(TokenType::SEPARATOR, "}");
-    advance();
-
-    return enumNode;
-}
-
-ParseNode Parser::parseStatement()
-{
-    Token token = currentToken();
-    advance(); // Move to the next token
-    return ParseNode(token);
-}
-
-ParseNode Parser::parseConst()
-{
-    expect(TokenType::KEYWORD, "const");
-
-    // Parse type
-    expect(TokenType::IDENTIFIER, ""); // Expecting an identifier
-    std::string type = currentToken().value;
-    advance();
-
-    // Parse identifier
-    expect(TokenType::IDENTIFIER, ""); // Expecting an identifier
-    std::string name = currentToken().value;
-    advance();
-
-    // Parse assignment
-    expect(TokenType::ASSIGNMENT_OPERATOR, "=");
-    advance();
-
-    // Parse value
-    expect(TokenType::NUMBER_LITERAL, "");
-    std::string value = currentToken().value;
-    advance();
-
-    // Parse semicolon
-    expect(TokenType::SEPARATOR, ";");
-
-    ParseNode constNode(Token{TokenType::KEYWORD, "const", currentToken().line});
-    constNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, type, currentToken().line}));
-    constNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, name, currentToken().line}));
-    constNode.addChild(ParseNode(Token{TokenType::NUMBER_LITERAL, value, currentToken().line}));
-
-    return constNode;
-}
-
-ParseNode Parser::parseVar()
-{
-    expect(TokenType::KEYWORD, "val");
-
-    // Parse type
-    expect(TokenType::IDENTIFIER, ""); // Expecting an identifier
-    std::string type = currentToken().value;
-    advance();
-
-    // Parse identifier
-    expect(TokenType::IDENTIFIER, ""); // Expecting an identifier
-    std::string name = currentToken().value;
-    advance();
-
-    // Parse assignment
-    expect(TokenType::ASSIGNMENT_OPERATOR, "=");
-    advance();
-
-    // Parse value
-    expect(TokenType::NUMBER_LITERAL, "");
-    std::string value = currentToken().value;
-    advance();
-
-    // Parse semicolon
-    expect(TokenType::SEPARATOR, ";");
-
-    ParseNode varNode(Token{TokenType::KEYWORD, "val", currentToken().line});
-    varNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, type, currentToken().line}));
-    varNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, name, currentToken().line}));
-    varNode.addChild(ParseNode(Token{TokenType::NUMBER_LITERAL, value, currentToken().line}));
-
-    return varNode;
-}
-
-ParseNode Parser::parseMethod()
-{
-    expect(TokenType::KEYWORD, "func");
-
-    // Parse return type
-    expect(TokenType::IDENTIFIER, ""); // Expecting an identifier
-    std::string returnType = currentToken().value;
-    advance();
-
-    // Parse method name
-    expect(TokenType::IDENTIFIER, ""); // Expecting an identifier
-    std::string methodName = currentToken().value;
-    advance();
-
-    // Parse parameters
-    expect(TokenType::SEPARATOR, "(");
-    advance();
-
-    // Parameters (simplified)
-    while (currentToken().type != TokenType::SEPARATOR || currentToken().value != ")")
-    {
-        // Parsing parameters (could be extended)
-        expect(TokenType::IDENTIFIER, ""); // Expecting an identifier
-        advance();
-    }
-    expect(TokenType::SEPARATOR, ")");
-    advance();
-
-    // Parse method body
-    expect(TokenType::SEPARATOR, "{");
-    advance();
-
-    // This should handle method body (simplified here)
-    ParseNode methodNode(Token{TokenType::KEYWORD, "func", currentToken().line});
-    methodNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, returnType, currentToken().line}));
-    methodNode.addChild(ParseNode(Token{TokenType::IDENTIFIER, methodName, currentToken().line}));
-
-    while (currentToken().type != TokenType::SEPARATOR || currentToken().value != "}")
-    {
-        // Parsing method body (could be extended)
-        advance();
-    }
-    expect(TokenType::SEPARATOR, "}");
-    advance();
-
-    return methodNode;
 }
 
 void Parser::printModuleNames()
@@ -331,6 +140,10 @@ void Parser::collectImportStatements()
                     exit(0);
                 }
             }
+            else
+            {
+                break;
+            }
         }
         auto importStatement = std::make_unique<ImportStatementNode>();
         importStatement->module_path = moduleNameParts;
@@ -339,7 +152,7 @@ void Parser::collectImportStatements()
     std::cout << "Finished collecting import statements." << std::endl;
 }
 
-void Parser::handleVariableDeclaration()
+std::unique_ptr<VariableDeclNode> Parser::handleVariableDeclaration()
 {
     advance();
     bool isMutable = false;
@@ -379,10 +192,10 @@ void Parser::handleVariableDeclaration()
     node->is_mutable = isMutable;
     node->type = tokenType;
 
-    root.statements.push_back(std::move(node));
+    return node;
 }
 
-vector<unique_ptr<Node>> Parser::collectFunctionParameters()
+std::vector<std::unique_ptr<Node>> Parser::collectFunctionParameters()
 {
     std::vector<std::unique_ptr<Node>> parameters;
 
@@ -455,26 +268,145 @@ void Parser::handleFunction()
     root.statements.push_back(std::move(functionNode));
 }
 
-vector<unique_ptr<Node>> Parser::handleFunctionBody()
+std::unique_ptr<AssignmentTree> Parser::getAssignmentTree()
 {
+    auto assignmentTree = std::make_unique<AssignmentTree>();
+
+    while (
+        currentToken().type == TokenType::STRING_LITERAL or
+        currentToken().type == TokenType::BOOL_LITERAL or
+        currentToken().type == TokenType::NUMBER_LITERAL or
+        currentToken().type == TokenType::CHAR_LITERAL or
+        currentToken().type == TokenType::IDENTIFIER or
+        currentToken().type == TokenType::ARITHMETIC_OPERATOR
+    )
+    {
+        auto node = std::make_unique<AssignmentTreeNode>();
+
+        std::string value = currentToken().value;
+        TokenType type = currentToken().type;
+
+        advance();
+
+        if (type == TokenType::IDENTIFIER and currentToken().value == "(")
+        {
+            node->type = AssignmentTreeNodeType::FUNCTION;
+            advance(); // Skip (
+            advance(); // Skip )
+        }
+
+        node->value = value;
+        node->type = getAssignmentTreeNodeTypeFromTokenType(type);
+
+        assignmentTree->tree.push_back(std::move(node));
+    }
+
+    return assignmentTree;
+}
+
+std::unique_ptr<Node> Parser::handleIfStatement()
+{
+}
+
+
+std::unique_ptr<Node> Parser::handleForStatement()
+{
+}
+
+
+std::unique_ptr<Node> Parser::handleWhileStatement()
+{
+}
+
+
+std::unique_ptr<Node> Parser::handleLoopStatement()
+{
+}
+
+
+std::unique_ptr<Node> Parser::handlePrintStatement()
+{
+}
+
+std::unique_ptr<Node> Parser::handleReturnStatement(DataType data)
+{
+}
+
+std::unique_ptr<Node> Parser::handleMatchStatement()
+{
+}
+
+std::vector<std::unique_ptr<Node>> Parser::handleFunctionBody()
+{
+    std::vector<std::unique_ptr<Node>> body;
+
+    DataType returnType = DataType::UNKNOWN;
 
     if (currentToken().value == "{")
     {
         advance();
+    }
 
+    if (currentToken().value == "->")
+    {
+        advance();
+        returnType = getDataType(currentToken().value);
+        advance();
+        expect(TokenType::SEPARATOR, "{");
+        advance();
     }
 
     while (currentToken().value != "}")
     {
-        if (currentToken().type == TokenType::KEYWORD)
+        if (currentToken().type == TokenType::IDENTIFIER)
         {
-            std::string identifier = currentToken().value;
+            const std::string identifier = currentToken().value;
             advance();
+            expect(TokenType::ASSIGNMENT_OPERATOR);
+            advance();
+
+            auto assignmentTree = getAssignmentTree();
+
+            auto assignmentBody = std::make_unique<AssignmentBody>();
+            assignmentBody->identifier = identifier;
+            assignmentBody->tree = std::move(assignmentTree);
+
+            body.push_back(std::move(assignmentTree));
         }
-        else
+        else if (isFunctionStarter(currentToken().value))
         {
-            displayError("Invalid identifier", currentToken());
-            exit(1);
+            std::string keyword = currentToken().value;
+            advance();
+
+            if (keyword == "if")
+                body.push_back(std::move(handleIfStatement()));
+
+            else if (keyword == "for")
+                body.push_back(std::move(handleForStatement()));
+
+            else if (keyword == "while")
+                body.push_back(std::move(handleWhileStatement()));
+
+            else if (keyword == "loop")
+                body.push_back(std::move(handleLoopStatement()));
+
+            else if (keyword == "print")
+                body.push_back(std::move(handlePrintStatement()));
+
+            else if (keyword == "return")
+                body.push_back(std::move(handleReturnStatement(returnType)));
+
+            else if (keyword == "let")
+                body.push_back(std::move(handleVariableDeclaration()));
+
+            else if (keyword == "match")
+                body.push_back(handleMatchStatement());
+            else
+            {
+                displayError("Invalid identifier", currentToken());
+                exit(1);
+            }
         }
     }
+    return body;
 }
