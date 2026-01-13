@@ -1,7 +1,7 @@
 #ifndef PARSER_NODES_H
 #define PARSER_NODES_H
 
-#include "../tokens/token.h"
+#include "../utils/token.h"
 #include <vector>
 
 // Define ParseNode and ParseTree in this header

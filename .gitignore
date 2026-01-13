@@ -2,6 +2,7 @@
 out/
 cmake-build-debug/
 cmake-build-release/
+vcpkg_installed/
 build/
 bin/
 obj/
@@ -45,3 +46,11 @@ node_modules/
 *.jar
 *.war
 *.ear
+
+external/
+
+# Codeium
+*~
+=======
+configuration/
+package.tar.xz

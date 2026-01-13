@@ -1,77 +1,93 @@
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <string>
 #include <vector>
 #include "./lexer/lexer.h"
-#include "./parser/parser.h"
-#include "./semantic/semantic.h"
-#include "./ir/ir.h"
-#include "./codegen/codegen.h"
+// #include "parser/node.h"
+#include <iomanip>
 
-// Function to read source code from a file
+#include "parser/parser.h"
+#include "utils/extension.h"
+
+using namespace std;
+
 std::string readSourceCodeFromFile(const std::string& filePath) {
-    std::ifstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "Error: Could not open file " << filePath << std::endl;
-        exit(1);
+    std::ifstream file(filePath, std::ios::in | std::ios::binary | std::ios::ate);
+    if (!file) {
+        throw std::runtime_error("Error: Could not open file " + filePath);
     }
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
+
+    std::streamsize size = file.tellg();
+    if (size < 0) {
+        throw std::runtime_error("Error: Could not determine file size: " + filePath);
+    }
+
+    std::string buffer(static_cast<size_t>(size), '\0');
+    file.seekg(0);
+    if (!file.read(buffer.data(), size)) {
+        throw std::runtime_error("Error: Could not read file: " + filePath);
+    }
+
+    return buffer;
 }
 
 int main(int argc, char* argv[]) {
-    std::string input;
+    std::ios::sync_with_stdio(false);
 
-    if (argc > 1) {
-        std::string filePath = argv[1];
-        if (filePath.find(".psmi") == std::string::npos) {
-            std::cerr << "Error: File must have a .psmi extension." << std::endl;
-            return 1;
-        }
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <source_file.psm>\n";
+        return EXIT_FAILURE;
+    }
+
+    const std::string filePath = argv[1];
+
+    if (filePath.length() < 4 || filePath.substr(filePath.length() - 4) != ".psm") {
+        std::cerr << "Error: File must have a .psm extension.\n";
+        return EXIT_FAILURE;
+    }
+
+    std::string input;
+    try {
         input = readSourceCodeFromFile(filePath);
-    } else {
-        std::cerr << "Usage: " << argv[0] << " <source file.psmi>" << std::endl;
-        return 1;
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << '\n';
+        return EXIT_FAILURE;
     }
 
     // Tokenization
     Lexer lexer(input);
-    std::vector<Token> tokens = lexer.tokenize();
-    std::cout << "Tokens generated: \n" << std::endl;
+    auto result = lexer.tokenize();
 
-     for (const auto& token : tokens) {
-         std::cout << "Token: " << token.value << std::endl;
-     }
-
-    try {
-        // Parsing
-        Parser parser(tokens);
-        auto parseTree = parser.parse();
-        std::cout << "Parsing complete." << std::endl;
-
-        // Semantic Analysis
-        SemanticAnalyzer semanticAnalyzer(parseTree);
-        if (!semanticAnalyzer.analyze()) {
-            std::cerr << "Semantic analysis failed." << std::endl;
-            return 1;
-        }
-
-        // Intermediate Representation Generation
-        IRGenerator irGenerator(parseTree);
-        std::string irCode = irGenerator.generateIR();
-        std::cout << "Intermediate representation generated:" << std::endl;
-        std::cout << irCode << std::endl;
-
-        // Code Generation
-        CodeGenerator codeGenerator(irCode);
-        codeGenerator.generateCode();
-        std::cout << "Code generation complete." << std::endl;
-    } catch (const std::runtime_error& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
+    if (!result.errors.empty()) {
+        for (const auto& error : result.errors)
+            displayError(error.message);
+        return EXIT_FAILURE;
     }
 
-    return 0;
+    std::cout << "Tokenization complete.\n";
+
+    // std::cout << "Tokens generated:\n";
+    //
+    // std::cout << std::left
+    //       << std::setw(20) << "Token"
+    //       << std::setw(15) << "Type"
+    //       << "\n-----------------------------------\n";
+    //
+    // for (const auto& token : result.tokens)
+    //     std::cout << std::left
+    //           << std::setw(20) << token.value
+    //           << std::setw(15) << toString(token.type)
+    //           << '\n';
+
+    Parser parser(result.tokens);
+    const auto ast = parser.parse();
+    // std::cout << "Parsing complete.\n";
+    //
+    // if (ast.module.size() > 3)
+    //     std::cout << getNodeTypeString(ast.module[3]->node_type) << '\n';
+    //
+    // std::cout << ast.module.size() << '\n';
+    //
+    // generateIR(ast);
+    return EXIT_SUCCESS;
 }

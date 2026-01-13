@@ -3,8 +3,8 @@
         {
             "type": "command",
             "name": "Command configuration",
-            "program": "X:/Prismio/tests/run.bat",
-            
+            "program": "python",
+            "args": ["run.py"]
         },
     ]
 }

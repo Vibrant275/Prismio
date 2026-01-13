@@ -1,0 +1,47 @@
+1. Comments:
+
+//      -> Code
+///     -> Single line Info/ Documentation
+/**/    -> Multi-Line Info/Documentation
+
+3. Access Modifiers:
+
+private       ->      Same class/file
+public        ->      Everywhere
+internal      ->      Same module
+
+4. Function overloading
+
+fn add(a: Int, b: Int) -> Int = a + b
+fn add(a: Int, b: Int, c: Int) -> Int = a + b + c
+// Parameters must be different
+
+5. Classes
+
+     STRUCT
+     IMPL
+     ENUM
+     TRAIT
+
+7. Relational operator
+
+and, or  // This will be used
+&& , ||  // This doesn't exists
+
+8. Matcher
+
+match x {
+  "success" => "Login successful !"    // No comma
+  "failed" =>  "Login failed !"
+  _ => "Error"                         // Fallback (_ -> matcher wildcard)
+}
+
+9. Loops
+
+for item in items {}                     -> Iterate
+
+while (isActive or isOffline){}          -> While
+
+loop {}                                  -> Infinite loop
+
+
