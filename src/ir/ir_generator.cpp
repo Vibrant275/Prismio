@@ -1,0 +1,703 @@
+#include "ir_generator.h"
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/FileSystem.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/Target/TargetOptions.h>
+#include <llvm/MC/TargetRegistry.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/ADT/SmallVector.h>
+#include <iostream>
+
+IRGenerator::IRGenerator(const std::string& moduleName) {
+    context = std::make_unique<llvm::LLVMContext>();
+    module = std::make_unique<llvm::Module>(moduleName, *context);
+    builder = std::make_unique<llvm::IRBuilder<>>(*context);
+
+    // Initialize global scope
+    pushScope();
+
+    // Declare built-in functions
+    declareBuiltins();
+}
+
+void IRGenerator::pushScope() {
+    scopes.push_back(Scope());
+}
+
+void IRGenerator::popScope() {
+    if (!scopes.empty()) {
+        scopes.pop_back();
+    }
+}
+
+llvm::AllocaInst* IRGenerator::getVariable(const std::string& name) {
+    // Search from innermost to outermost scope
+    for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+        auto found = it->namedValues.find(name);
+        if (found != it->namedValues.end()) {
+            return found->second;
+        }
+    }
+    return nullptr;
+}
+
+void IRGenerator::setVariable(const std::string& name, llvm::AllocaInst* value) {
+    if (!scopes.empty()) {
+        scopes.back().namedValues[name] = value;
+    }
+}
+
+void IRGenerator::generate(const ModuleNode& moduleNode) {
+    for (const auto& stmt : moduleNode.statements) {
+        switch (stmt->type) {
+            case NodeType::IMPORT_STATEMENT:
+                generateImport(dynamic_cast<ImportStatementNode*>(stmt.get()));
+                break;
+            case NodeType::VARIABLE_DECL:
+                generateGlobalVariable(dynamic_cast<VariableDeclNode*>(stmt.get()));
+                break;
+            case NodeType::FUNCTION:
+                generateFunction(dynamic_cast<FunctionNode*>(stmt.get()));
+                break;
+            case NodeType::STRUCT_DECL:
+                generateStruct(dynamic_cast<StructDeclNode*>(stmt.get()));
+                break;
+            case NodeType::ENUM_DECL:
+                generateEnum(dynamic_cast<EnumDeclNode*>(stmt.get()));
+                break;
+            case NodeType::TRAIT_DECL:
+                generateTrait(dynamic_cast<TraitDeclNode*>(stmt.get()));
+                break;
+            case NodeType::IMPL_DECL:
+                generateImpl(dynamic_cast<ImplDeclNode*>(stmt.get()));
+                break;
+            default:
+                std::cerr << "Unknown top-level statement type" << std::endl;
+                break;
+        }
+    }
+}
+
+void IRGenerator::generateImport(const ImportStatementNode* node) {
+    // For now, imports are no-op in IR generation
+    // Later we'll link against other modules
+}
+
+void IRGenerator::generateGlobalVariable(const VariableDeclNode* node) {
+    llvm::Type* varType = llvm::Type::getInt32Ty(*context); // Default to i32
+
+    if (node->type_annotation) {
+        varType = convertType(dynamic_cast<TypeAnnotationNode*>(node->type_annotation.get()));
+    } else if (node->initializer) {
+        // Infer type from initializer
+        auto* litNode = dynamic_cast<LiteralExprNode*>(node->initializer.get());
+        if (litNode) {
+            if (litNode->literal_type == TokenType::NUMBER_LITERAL) {
+                varType = llvm::Type::getInt32Ty(*context);
+            } else if (litNode->literal_type == TokenType::BOOL_LITERAL) {
+                varType = llvm::Type::getInt1Ty(*context);
+            } else if (litNode->literal_type == TokenType::STRING_LITERAL) {
+                varType = llvm::PointerType::get(llvm::Type::getInt8Ty(*context), 0);
+            } else if (litNode->literal_type == TokenType::CHAR_LITERAL) {
+                varType = llvm::Type::getInt8Ty(*context);
+            }
+        }
+    }
+
+    llvm::Constant* initializer = nullptr;
+    if (node->initializer) {
+        auto* litNode = dynamic_cast<LiteralExprNode*>(node->initializer.get());
+        if (litNode) {
+            if (litNode->literal_type == TokenType::NUMBER_LITERAL) {
+                initializer = llvm::ConstantInt::get(varType, std::stoi(litNode->value));
+            } else if (litNode->literal_type == TokenType::BOOL_LITERAL) {
+                initializer = llvm::ConstantInt::get(varType, litNode->value == "true" ? 1 : 0);
+            } else {
+                initializer = llvm::Constant::getNullValue(varType);
+            }
+        } else {
+            initializer = llvm::Constant::getNullValue(varType);
+        }
+    } else {
+        initializer = llvm::Constant::getNullValue(varType);
+    }
+
+    auto* globalVar = new llvm::GlobalVariable(
+        *module,
+        varType,
+        !node->is_mutable, // isConstant
+        llvm::GlobalValue::ExternalLinkage,
+        initializer,
+        node->name
+    );
+
+    // Store in global scope for later access
+    if (!scopes.empty()) {
+        // Create a fake AllocaInst pointer to store the global
+        // We'll handle this specially in generateIdentifierExpr
+        scopes[0].namedValues[node->name] = reinterpret_cast<llvm::AllocaInst*>(globalVar);
+    }
+}
+
+void IRGenerator::generateFunction(const FunctionNode* node) {
+    // Build parameter types using SmallVector
+    llvm::SmallVector<llvm::Type*, 8> paramTypes;
+    for (const auto& param : node->parameters) {
+        auto* paramNode = dynamic_cast<FunctionParameterNode*>(param.get());
+        auto* typeNode = dynamic_cast<TypeAnnotationNode*>(paramNode->type_annotation.get());
+        llvm::Type* paramType = convertType(typeNode);
+        paramTypes.push_back(paramType);
+    }
+
+    // Build return type
+    llvm::Type* returnType = llvm::Type::getVoidTy(*context);
+    if (node->return_type) {
+        auto* typeNode = dynamic_cast<TypeAnnotationNode*>(node->return_type.get());
+        returnType = convertType(typeNode);
+    }
+
+    // Create function type
+    llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
+
+    // Create function
+    llvm::Function* function = llvm::Function::Create(
+        funcType,
+        llvm::Function::ExternalLinkage,
+        node->name,
+        module.get()
+    );
+
+    // Set parameter names
+    unsigned idx = 0;
+    for (auto& arg : function->args()) {
+        auto* paramNode = dynamic_cast<FunctionParameterNode*>(node->parameters[idx].get());
+        arg.setName(paramNode->name);
+        idx++;
+    }
+
+    // Create entry block
+    llvm::BasicBlock* entryBlock = llvm::BasicBlock::Create(*context, "entry", function);
+    builder->SetInsertPoint(entryBlock);
+
+    // Push new scope for function
+    pushScope();
+    currentFunction = function;
+
+    // Allocate space for parameters
+    idx = 0;
+    for (auto& arg : function->args()) {
+        auto* paramNode = dynamic_cast<FunctionParameterNode*>(node->parameters[idx].get());
+        auto* typeNode = dynamic_cast<TypeAnnotationNode*>(paramNode->type_annotation.get());
+        llvm::Type* paramType = convertType(typeNode);
+
+        llvm::AllocaInst* alloca = createEntryBlockAlloca(function, paramNode->name, paramType);
+        builder->CreateStore(&arg, alloca);
+        setVariable(paramNode->name, alloca);
+
+        idx++;
+    }
+
+    // Generate function body
+    if (node->body) {
+        generateBlock(dynamic_cast<BlockNode*>(node->body.get()));
+    }
+
+    // If no return statement, add default return
+    if (!builder->GetInsertBlock()->getTerminator()) {
+        if (returnType->isVoidTy()) {
+            builder->CreateRetVoid();
+        } else {
+            builder->CreateRet(llvm::Constant::getNullValue(returnType));
+        }
+    }
+
+    // Verify function
+    if (llvm::verifyFunction(*function, &llvm::errs())) {
+        std::cerr << "Error: Function verification failed for " << node->name << std::endl;
+    }
+
+    popScope();
+    currentFunction = nullptr;
+}
+
+void IRGenerator::generateStruct(const StructDeclNode* node) {
+    // Build field types using SmallVector
+    llvm::SmallVector<llvm::Type*, 8> fieldTypes;
+    for (const auto& field : node->fields) {
+        auto* typeNode = dynamic_cast<TypeAnnotationNode*>(field.type_annotation.get());
+        llvm::Type* fieldType = convertType(typeNode);
+        fieldTypes.push_back(fieldType);
+    }
+
+    // Create struct type
+    llvm::StructType* structType = llvm::StructType::create(*context, fieldTypes, node->name);
+
+    // Store in type table
+    if (!scopes.empty()) {
+        scopes.back().namedTypes[node->name] = structType;
+    }
+}
+
+void IRGenerator::generateEnum(const EnumDeclNode* node) {
+    // Enums are represented as i32 (tag) for now
+    // Later we can add support for associated values
+    llvm::Type* enumType = llvm::Type::getInt32Ty(*context);
+
+    if (!scopes.empty()) {
+        scopes.back().namedTypes[node->name] = enumType;
+    }
+}
+
+void IRGenerator::generateTrait(const TraitDeclNode* node) {
+    // Traits are interface declarations - no IR needed yet
+    // Will be used for vtables later
+}
+
+void IRGenerator::generateImpl(const ImplDeclNode* node) {
+    // Generate methods
+    for (const auto& method : node->methods) {
+        generateFunction(dynamic_cast<FunctionNode*>(method.get()));
+    }
+}
+
+llvm::Value* IRGenerator::generateStatement(const Node* node) {
+    switch (node->type) {
+        case NodeType::BLOCK:
+            return generateBlock(dynamic_cast<const BlockNode*>(node));
+        case NodeType::IF_STATEMENT:
+            return generateIfStatement(dynamic_cast<const IfStatementNode*>(node));
+        case NodeType::WHILE_STATEMENT:
+            return generateWhileStatement(dynamic_cast<const WhileStatementNode*>(node));
+        case NodeType::FOR_STATEMENT:
+            return generateForStatement(dynamic_cast<const ForStatementNode*>(node));
+        case NodeType::LOOP_STATEMENT:
+            return generateLoopStatement(dynamic_cast<const LoopStatementNode*>(node));
+        case NodeType::RETURN_STATEMENT:
+            return generateReturnStatement(dynamic_cast<const ReturnStatementNode*>(node));
+        case NodeType::VARIABLE_DECL:
+            return generateVariableDecl(dynamic_cast<const VariableDeclNode*>(node));
+        case NodeType::ASSIGNMENT_STATEMENT:
+            return generateAssignmentStatement(dynamic_cast<const AssignmentStatementNode*>(node));
+        case NodeType::EXPRESSION_STATEMENT:
+            return generateExpressionStatement(dynamic_cast<const ExpressionStatementNode*>(node));
+        case NodeType::BREAK_STATEMENT:
+        case NodeType::CONTINUE_STATEMENT:
+            // TODO: Implement with loop context
+            return nullptr;
+        default:
+            std::cerr << "Unknown statement type" << std::endl;
+            return nullptr;
+    }
+}
+
+llvm::Value* IRGenerator::generateBlock(const BlockNode* node) {
+    pushScope();
+
+    llvm::Value* lastValue = nullptr;
+    for (const auto& stmt : node->statements) {
+        lastValue = generateStatement(stmt.get());
+    }
+
+    popScope();
+    return lastValue;
+}
+
+llvm::Value* IRGenerator::generateIfStatement(const IfStatementNode* node) {
+    llvm::Value* condValue = generateExpression(node->condition.get());
+
+    // Convert condition to i1
+    condValue = builder->CreateICmpNE(
+        condValue,
+        llvm::ConstantInt::get(*context, llvm::APInt(1, 0)),
+        "ifcond"
+    );
+
+    llvm::Function* function = builder->GetInsertBlock()->getParent();
+
+    llvm::BasicBlock* thenBlock = llvm::BasicBlock::Create(*context, "then", function);
+    llvm::BasicBlock* elseBlock = llvm::BasicBlock::Create(*context, "else");
+    llvm::BasicBlock* mergeBlock = llvm::BasicBlock::Create(*context, "ifcont");
+
+    if (node->else_block) {
+        builder->CreateCondBr(condValue, thenBlock, elseBlock);
+    } else {
+        builder->CreateCondBr(condValue, thenBlock, mergeBlock);
+    }
+
+    // Then block
+    builder->SetInsertPoint(thenBlock);
+    generateStatement(node->then_block.get());
+    if (!builder->GetInsertBlock()->getTerminator()) {
+        builder->CreateBr(mergeBlock);
+    }
+
+    // Else block
+    if (node->else_block) {
+        function->insert(function->end(), elseBlock);
+        builder->SetInsertPoint(elseBlock);
+        generateStatement(node->else_block.get());
+        if (!builder->GetInsertBlock()->getTerminator()) {
+            builder->CreateBr(mergeBlock);
+        }
+    }
+
+    // Merge block
+    function->insert(function->end(), mergeBlock);
+    builder->SetInsertPoint(mergeBlock);
+
+    return nullptr;
+}
+
+llvm::Value* IRGenerator::generateWhileStatement(const WhileStatementNode* node) {
+    llvm::Function* function = builder->GetInsertBlock()->getParent();
+
+    llvm::BasicBlock* condBlock = llvm::BasicBlock::Create(*context, "whilecond", function);
+    llvm::BasicBlock* bodyBlock = llvm::BasicBlock::Create(*context, "whilebody");
+    llvm::BasicBlock* afterBlock = llvm::BasicBlock::Create(*context, "afterwhile");
+
+    builder->CreateBr(condBlock);
+    builder->SetInsertPoint(condBlock);
+
+    llvm::Value* condValue = generateExpression(node->condition.get());
+
+    // Handle boolean conversion properly
+    if (condValue && condValue->getType()->isIntegerTy()) {
+        if (condValue->getType()->getIntegerBitWidth() != 1) {
+            condValue = builder->CreateICmpNE(
+                condValue,
+                llvm::ConstantInt::get(condValue->getType(), 0),
+                "whilecond"
+            );
+        }
+    }
+
+    builder->CreateCondBr(condValue, bodyBlock, afterBlock);
+
+    function->insert(function->end(), bodyBlock);
+    builder->SetInsertPoint(bodyBlock);
+
+    if (node->body) {
+        generateStatement(node->body.get());
+    }
+
+    if (!builder->GetInsertBlock()->getTerminator()) {
+        builder->CreateBr(condBlock);
+    }
+
+    function->insert(function->end(), afterBlock);
+    builder->SetInsertPoint(afterBlock);
+
+    return nullptr;
+}
+
+llvm::Value* IRGenerator::generateForStatement(const ForStatementNode* node) {
+    // For now, implement as while loop
+    // TODO: Proper iterator implementation
+    return nullptr;
+}
+
+llvm::Value* IRGenerator::generateLoopStatement(const LoopStatementNode* node) {
+    llvm::Function* function = builder->GetInsertBlock()->getParent();
+
+    llvm::BasicBlock* loopBlock = llvm::BasicBlock::Create(*context, "loop", function);
+    llvm::BasicBlock* afterBlock = llvm::BasicBlock::Create(*context, "afterloop");
+
+    builder->CreateBr(loopBlock);
+    builder->SetInsertPoint(loopBlock);
+
+    generateStatement(node->body.get());
+
+    if (!builder->GetInsertBlock()->getTerminator()) {
+        builder->CreateBr(loopBlock);
+    }
+
+    function->insert(function->end(), afterBlock);
+    builder->SetInsertPoint(afterBlock);
+
+    return nullptr;
+}
+
+llvm::Value* IRGenerator::generateReturnStatement(const ReturnStatementNode* node) {
+    if (node->value) {
+        llvm::Value* retValue = generateExpression(node->value.get());
+        return builder->CreateRet(retValue);
+    } else {
+        return builder->CreateRetVoid();
+    }
+}
+
+llvm::Value* IRGenerator::generateVariableDecl(const VariableDeclNode* node) {
+    llvm::Type* varType = llvm::Type::getInt32Ty(*context);
+
+    if (node->type_annotation) {
+        varType = convertType(dynamic_cast<TypeAnnotationNode*>(node->type_annotation.get()));
+    }
+
+    llvm::AllocaInst* alloca = createEntryBlockAlloca(currentFunction, node->name, varType);
+
+    if (node->initializer) {
+        llvm::Value* initValue = generateExpression(node->initializer.get());
+        builder->CreateStore(initValue, alloca);
+    }
+
+    setVariable(node->name, alloca);
+
+    return alloca;
+}
+
+llvm::Value* IRGenerator::generateAssignmentStatement(const AssignmentStatementNode* node) {
+    llvm::Value* value = generateExpression(node->value.get());
+
+    // Get the variable
+    auto* identNode = dynamic_cast<IdentifierExprNode*>(node->target.get());
+    if (identNode) {
+        llvm::AllocaInst* variable = getVariable(identNode->name);
+        if (!variable) {
+            std::cerr << "Unknown variable: " << identNode->name << std::endl;
+            return nullptr;
+        }
+
+        return builder->CreateStore(value, variable);
+    }
+
+    return nullptr;
+}
+
+llvm::Value* IRGenerator::generateExpressionStatement(const ExpressionStatementNode* node) {
+    return generateExpression(node->expression.get());
+}
+
+llvm::Value* IRGenerator::generateExpression(const Node* node) {
+    switch (node->type) {
+        case NodeType::BINARY_EXPR:
+            return generateBinaryExpr(dynamic_cast<const BinaryExprNode*>(node));
+        case NodeType::UNARY_EXPR:
+            return generateUnaryExpr(dynamic_cast<const UnaryExprNode*>(node));
+        case NodeType::LITERAL_EXPR:
+            return generateLiteralExpr(dynamic_cast<const LiteralExprNode*>(node));
+        case NodeType::IDENTIFIER_EXPR:
+            return generateIdentifierExpr(dynamic_cast<const IdentifierExprNode*>(node));
+        case NodeType::CALL_EXPR:
+            return generateCallExpr(dynamic_cast<const CallExprNode*>(node));
+        case NodeType::MEMBER_ACCESS_EXPR:
+            return generateMemberAccessExpr(dynamic_cast<const MemberAccessExprNode*>(node));
+        default:
+            std::cerr << "Unknown expression type" << std::endl;
+            return nullptr;
+    }
+}
+
+llvm::Value* IRGenerator::generateBinaryExpr(const BinaryExprNode* node) {
+    llvm::Value* left = generateExpression(node->left.get());
+    llvm::Value* right = generateExpression(node->right.get());
+
+    if (!left || !right) return nullptr;
+
+    switch (node->op) {
+        case BinaryOp::ADD:
+            return builder->CreateAdd(left, right, "addtmp");
+        case BinaryOp::SUB:
+            return builder->CreateSub(left, right, "subtmp");
+        case BinaryOp::MUL:
+            return builder->CreateMul(left, right, "multmp");
+        case BinaryOp::DIV:
+            return builder->CreateSDiv(left, right, "divtmp");
+        case BinaryOp::MOD:
+            return builder->CreateSRem(left, right, "modtmp");
+        case BinaryOp::EQ:
+            return builder->CreateICmpEQ(left, right, "eqtmp");
+        case BinaryOp::NEQ:
+            return builder->CreateICmpNE(left, right, "neqtmp");
+        case BinaryOp::LT:
+            return builder->CreateICmpSLT(left, right, "lttmp");
+        case BinaryOp::GT:
+            return builder->CreateICmpSGT(left, right, "gttmp");
+        case BinaryOp::LTE:
+            return builder->CreateICmpSLE(left, right, "letmp");
+        case BinaryOp::GTE:
+            return builder->CreateICmpSGE(left, right, "getmp");
+        default:
+            std::cerr << "Unknown binary operator" << std::endl;
+            return nullptr;
+    }
+}
+
+llvm::Value* IRGenerator::generateUnaryExpr(const UnaryExprNode* node) {
+    llvm::Value* operand = generateExpression(node->operand.get());
+
+    if (!operand) return nullptr;
+
+    switch (node->op) {
+        case UnaryOp::NEG:
+            return builder->CreateNeg(operand, "negtmp");
+        case UnaryOp::NOT:
+            return builder->CreateNot(operand, "nottmp");
+        default:
+            std::cerr << "Unknown unary operator" << std::endl;
+            return nullptr;
+    }
+}
+
+llvm::Value* IRGenerator::generateLiteralExpr(const LiteralExprNode* node) {
+    switch (node->literal_type) {
+        case TokenType::NUMBER_LITERAL:
+            return llvm::ConstantInt::get(*context, llvm::APInt(32, std::stoi(node->value), true));
+        case TokenType::BOOL_LITERAL:
+            return llvm::ConstantInt::get(*context, llvm::APInt(1, node->value == "true" ? 1 : 0));
+        case TokenType::STRING_LITERAL: {
+            return builder->CreateGlobalStringPtr(node->value);
+        }
+        case TokenType::CHAR_LITERAL:
+            return llvm::ConstantInt::get(*context, llvm::APInt(8, node->value[0]));
+        default:
+            return nullptr;
+    }
+}
+
+llvm::Value* IRGenerator::generateIdentifierExpr(const IdentifierExprNode* node) {
+    llvm::AllocaInst* variable = getVariable(node->name);
+    if (!variable) {
+        // Check if it's a global variable
+        llvm::GlobalVariable* globalVar = module->getNamedGlobal(node->name);
+        if (globalVar) {
+            return builder->CreateLoad(globalVar->getValueType(), globalVar, node->name.c_str());
+        }
+
+        std::cerr << "Unknown variable: " << node->name << std::endl;
+        return nullptr;
+    }
+
+    // Check if it's actually a global variable stored in the symbol table
+    llvm::GlobalVariable* possibleGlobal = module->getNamedGlobal(node->name);
+    if (possibleGlobal) {
+        return builder->CreateLoad(possibleGlobal->getValueType(), possibleGlobal, node->name.c_str());
+    }
+
+    return builder->CreateLoad(variable->getAllocatedType(), variable, node->name.c_str());
+}
+
+llvm::Value* IRGenerator::generateCallExpr(const CallExprNode* node) {
+    auto* calleeNode = dynamic_cast<IdentifierExprNode*>(node->callee.get());
+    if (!calleeNode) {
+        std::cerr << "Invalid callee in function call" << std::endl;
+        return nullptr;
+    }
+
+    llvm::Function* calleeFunc = module->getFunction(calleeNode->name);
+    if (!calleeFunc) {
+        std::cerr << "Unknown function: " << calleeNode->name << std::endl;
+        return nullptr;
+    }
+
+    llvm::SmallVector<llvm::Value*, 8> args;
+    for (const auto& arg : node->arguments) {
+        llvm::Value* argVal = generateExpression(arg.get());
+        if (argVal) {
+            args.push_back(argVal);
+        }
+    }
+
+    // Debug: print function signature
+    if (args.size() != calleeFunc->arg_size() && !calleeFunc->isVarArg()) {
+        std::cerr << "Error: Function " << calleeNode->name
+                  << " expects " << calleeFunc->arg_size()
+                  << " arguments but got " << args.size() << std::endl;
+        return nullptr;
+    }
+
+    // Don't name void function calls
+    if (calleeFunc->getReturnType()->isVoidTy()) {
+        return builder->CreateCall(calleeFunc, args);
+    }
+
+    return builder->CreateCall(calleeFunc, args, "calltmp");
+}
+
+llvm::Value* IRGenerator::generateMemberAccessExpr(const MemberAccessExprNode* node) {
+    // TODO: Implement struct member access
+    return nullptr;
+}
+
+llvm::Type* IRGenerator::convertType(const TypeAnnotationNode* typeNode) {
+    if (typeNode->type_name == "Int") {
+        return llvm::Type::getInt32Ty(*context);
+    } else if (typeNode->type_name == "Bool") {
+        return llvm::Type::getInt1Ty(*context);
+    } else if (typeNode->type_name == "Char") {
+        return llvm::Type::getInt8Ty(*context);
+    } else if (typeNode->type_name == "String") {
+        return llvm::PointerType::get(llvm::Type::getInt8Ty(*context), 0);
+    }
+
+    // Check for user-defined types
+    for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+        auto found = it->namedTypes.find(typeNode->type_name);
+        if (found != it->namedTypes.end()) {
+            return found->second;
+        }
+    }
+
+    return llvm::Type::getInt32Ty(*context); // Default
+}
+
+llvm::AllocaInst* IRGenerator::createEntryBlockAlloca(llvm::Function* function,
+                                                       const std::string& varName,
+                                                       llvm::Type* type) {
+    llvm::IRBuilder<> tmpBuilder(&function->getEntryBlock(), function->getEntryBlock().begin());
+    return tmpBuilder.CreateAlloca(type, nullptr, varName.c_str());
+}
+
+void IRGenerator::declareBuiltins() {
+    // Declare printf using SmallVector
+    llvm::Type* int8PtrType = llvm::PointerType::get(llvm::Type::getInt8Ty(*context), 0);
+    llvm::SmallVector<llvm::Type*, 1> printfArgs;
+    printfArgs.push_back(int8PtrType);
+
+    llvm::FunctionType* printfType = llvm::FunctionType::get(
+        llvm::Type::getInt32Ty(*context),
+        printfArgs,
+        true
+    );
+
+    llvm::Function::Create(
+        printfType,
+        llvm::Function::ExternalLinkage,
+        "printf",
+        module.get()
+    );
+
+    // Declare println as wrapper around printf
+    llvm::SmallVector<llvm::Type*, 1> printlnArgs;
+    printlnArgs.push_back(int8PtrType);
+
+    llvm::FunctionType* printlnType = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(*context),
+        printlnArgs,
+        false
+    );
+
+    llvm::Function::Create(
+        printlnType,
+        llvm::Function::ExternalLinkage,
+        "println",
+        module.get()
+    );
+}
+
+void IRGenerator::printIR() {
+    module->print(llvm::outs(), nullptr);
+}
+
+void IRGenerator::writeIRToFile(const std::string& filename) {
+    std::error_code EC;
+    llvm::raw_fd_ostream dest(filename, EC, llvm::sys::fs::OF_None);
+
+    if (EC) {
+        std::cerr << "Could not open file: " << EC.message() << std::endl;
+        return;
+    }
+
+    module->print(dest, nullptr);
+}

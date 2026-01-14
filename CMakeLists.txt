@@ -7,7 +7,7 @@ endif()
 set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 
 # Project name
-project(Prismio)
+project(prismio)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 23)
@@ -33,9 +33,7 @@ file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.psm")
 # Add subdirectories for modularity
 add_subdirectory(src/lexer)
 add_subdirectory(src/parser)
-add_subdirectory(src/semantic)
 add_subdirectory(src/ir)
-add_subdirectory(src/runtime)
 add_subdirectory(src/utils)
 
 # Add the main executable
@@ -46,9 +44,7 @@ add_executable(Prismio ${SOURCES} "src/main.cpp")
 target_link_libraries(Prismio
         lexer
         parser
-        semantic
         ir
-        runtime
         utils
         ${LLVM_LIBS}
 )

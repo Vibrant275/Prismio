@@ -3,11 +3,10 @@
 #include <string>
 #include <vector>
 #include "./lexer/lexer.h"
-// #include "parser/node.h"
-#include <iomanip>
-
-#include "parser/parser.h"
-#include "utils/extension.h"
+#include "./parser/parser.h"
+#include "./parser/node.h"
+#include "./ir/ir_generator.h"
+#include "./utils/extension.h"
 
 using namespace std;
 
@@ -29,6 +28,147 @@ std::string readSourceCodeFromFile(const std::string& filePath) {
     }
 
     return buffer;
+}
+
+void printAST(const Node* node, int indent = 0) {
+    if (!node) return;
+
+    std::string indentStr(indent * 2, ' ');
+    std::cout << indentStr << getNodeTypeString(node->type);
+
+    // Print node-specific information
+    switch (node->type) {
+        case NodeType::IMPORT_STATEMENT: {
+            const auto* importNode = dynamic_cast<const ImportStatementNode*>(node);
+            std::cout << " [";
+            for (size_t i = 0; i < importNode->module_path.size(); i++) {
+                if (i > 0) std::cout << ".";
+                std::cout << importNode->module_path[i];
+            }
+            std::cout << "]";
+            break;
+        }
+        case NodeType::VARIABLE_DECL: {
+            const auto* varNode = dynamic_cast<const VariableDeclNode*>(node);
+            std::cout << " [" << varNode->name;
+            if (varNode->is_mutable) std::cout << " (mut)";
+            std::cout << "]";
+            break;
+        }
+        case NodeType::FUNCTION: {
+            const auto* funcNode = dynamic_cast<const FunctionNode*>(node);
+            std::cout << " [" << funcNode->name << "]";
+            break;
+        }
+        case NodeType::STRUCT_DECL: {
+            const auto* structNode = dynamic_cast<const StructDeclNode*>(node);
+            std::cout << " [" << structNode->name << "]";
+            break;
+        }
+        case NodeType::ENUM_DECL: {
+            const auto* enumNode = dynamic_cast<const EnumDeclNode*>(node);
+            std::cout << " [" << enumNode->name << "]";
+            break;
+        }
+        case NodeType::IDENTIFIER_EXPR: {
+            const auto* identNode = dynamic_cast<const IdentifierExprNode*>(node);
+            std::cout << " [" << identNode->name << "]";
+            break;
+        }
+        case NodeType::LITERAL_EXPR: {
+            const auto* litNode = dynamic_cast<const LiteralExprNode*>(node);
+            std::cout << " [" << litNode->value << "]";
+            break;
+        }
+        case NodeType::BINARY_EXPR: {
+            const auto* binNode = dynamic_cast<const BinaryExprNode*>(node);
+            std::cout << " [op=" << static_cast<int>(binNode->op) << "]";
+            break;
+        }
+        default:
+            break;
+    }
+
+    std::cout << "\n";
+
+    // Recursively print children
+    if (node->type == NodeType::MODULE) {
+        const auto* moduleNode = dynamic_cast<const ModuleNode*>(node);
+        for (const auto& stmt : moduleNode->statements) {
+            printAST(stmt.get(), indent + 1);
+        }
+    }
+    else if (node->type == NodeType::FUNCTION) {
+        const auto* funcNode = dynamic_cast<const FunctionNode*>(node);
+
+        std::cout << indentStr << "  Parameters:\n";
+        for (const auto& param : funcNode->parameters) {
+            printAST(param.get(), indent + 2);
+        }
+
+        if (funcNode->return_type) {
+            std::cout << indentStr << "  Return type:\n";
+            printAST(funcNode->return_type.get(), indent + 2);
+        }
+
+        if (funcNode->body) {
+            std::cout << indentStr << "  Body:\n";
+            printAST(funcNode->body.get(), indent + 2);
+        }
+    }
+    else if (node->type == NodeType::BLOCK) {
+        const auto* blockNode = dynamic_cast<const BlockNode*>(node);
+        for (const auto& stmt : blockNode->statements) {
+            printAST(stmt.get(), indent + 1);
+        }
+    }
+    else if (node->type == NodeType::IF_STATEMENT) {
+        const auto* ifNode = dynamic_cast<const IfStatementNode*>(node);
+
+        std::cout << indentStr << "  Condition:\n";
+        printAST(ifNode->condition.get(), indent + 2);
+
+        std::cout << indentStr << "  Then:\n";
+        printAST(ifNode->then_block.get(), indent + 2);
+
+        if (ifNode->else_block) {
+            std::cout << indentStr << "  Else:\n";
+            printAST(ifNode->else_block.get(), indent + 2);
+        }
+    }
+    else if (node->type == NodeType::VARIABLE_DECL) {
+        const auto* varNode = dynamic_cast<const VariableDeclNode*>(node);
+
+        if (varNode->type_annotation) {
+            std::cout << indentStr << "  Type:\n";
+            printAST(varNode->type_annotation.get(), indent + 2);
+        }
+
+        if (varNode->initializer) {
+            std::cout << indentStr << "  Initializer:\n";
+            printAST(varNode->initializer.get(), indent + 2);
+        }
+    }
+    else if (node->type == NodeType::BINARY_EXPR) {
+        const auto* binNode = dynamic_cast<const BinaryExprNode*>(node);
+
+        std::cout << indentStr << "  Left:\n";
+        printAST(binNode->left.get(), indent + 2);
+
+        std::cout << indentStr << "  Right:\n";
+        printAST(binNode->right.get(), indent + 2);
+    }
+    else if (node->type == NodeType::STRUCT_DECL) {
+        const auto* structNode = dynamic_cast<const StructDeclNode*>(node);
+
+        std::cout << indentStr << "  Fields:\n";
+        for (const auto& field : structNode->fields) {
+            std::cout << indentStr << "    " << field.name << ":\n";
+            if (field.type_annotation) {
+                printAST(field.type_annotation.get(), indent + 3);
+            }
+        }
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -55,6 +195,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Tokenization
+    std::cout << "=== TOKENIZATION ===" << std::endl;
     Lexer lexer(input);
     auto result = lexer.tokenize();
 
@@ -64,30 +205,36 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    std::cout << "Tokenization complete.\n";
+    std::cout << "✓ Tokenization complete. " << result.tokens.size() << " tokens generated.\n\n";
 
-    // std::cout << "Tokens generated:\n";
-    //
-    // std::cout << std::left
-    //       << std::setw(20) << "Token"
-    //       << std::setw(15) << "Type"
-    //       << "\n-----------------------------------\n";
-    //
-    // for (const auto& token : result.tokens)
-    //     std::cout << std::left
-    //           << std::setw(20) << token.value
-    //           << std::setw(15) << toString(token.type)
-    //           << '\n';
-
+    // Parsing
+    std::cout << "=== PARSING ===" << std::endl;
     Parser parser(result.tokens);
-    const auto ast = parser.parse();
-    // std::cout << "Parsing complete.\n";
-    //
-    // if (ast.module.size() > 3)
-    //     std::cout << getNodeTypeString(ast.module[3]->node_type) << '\n';
-    //
-    // std::cout << ast.module.size() << '\n';
-    //
-    // generateIR(ast);
+    ModuleNode ast = parser.parse();
+
+    std::cout << "✓ Parsing complete.\n\n";
+
+    // Print AST
+    std::cout << "=== ABSTRACT SYNTAX TREE ===" << std::endl;
+    printAST(&ast);
+
+    // IR Generation
+    std::cout << "\n=== IR GENERATION ===" << std::endl;
+    IRGenerator irGen("main_module");
+    irGen.generate(ast);
+
+    std::cout << "✓ IR generation complete.\n\n";
+
+    // Print IR
+    std::cout << "=== LLVM IR ===" << std::endl;
+    irGen.printIR();
+
+    // Write IR to file
+    std::string irFilename = filePath.substr(0, filePath.length() - 4) + ".ll";
+    irGen.writeIRToFile(irFilename);
+    std::cout << "\n✓ IR written to " << irFilename << "\n";
+
+    std::cout << "\n✓ Compilation successful!\n";
+
     return EXIT_SUCCESS;
 }

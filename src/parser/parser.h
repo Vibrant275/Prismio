@@ -16,27 +16,49 @@ private:
     std::vector<Token> tokens;
     size_t position;
 
+    // Token utilities
     Token currentToken();
+    Token peek(int offset = 1);
     void advance();
-    void expect(TokenType type);
-    void expect(TokenType type, const std::string& expectedValue);
+    bool check(TokenType type);
+    bool check(TokenType type, const std::string& value);
+    bool match(TokenType type);
+    bool match(TokenType type, const std::string& value);
+    void expect(TokenType type, const std::string& context);
+    void expect(TokenType type, const std::string& value, const std::string& context);
 
-    static void printModuleNames();
-    void collectImportStatements();
+    // Top-level parsing
+    std::unique_ptr<Node> parseImportStatement();
+    std::unique_ptr<Node> parseDeclaration();
 
-    std::unique_ptr<VariableDeclNode> handleVariableDeclaration();
+    // Declarations
+    std::unique_ptr<Node> parseVariableDecl();
+    std::unique_ptr<Node> parseFunctionDecl();
+    std::unique_ptr<Node> parseStructDecl();
+    std::unique_ptr<Node> parseEnumDecl();
+    std::unique_ptr<Node> parseTraitDecl();
+    std::unique_ptr<Node> parseImplDecl();
 
-    std::unique_ptr<AssignmentTree> getAssignmentTree();
-    std::unique_ptr<Node> handleIfStatement();
-    std::unique_ptr<Node> handleForStatement();
-    std::unique_ptr<Node> handleWhileStatement();
-    std::unique_ptr<Node> handleLoopStatement();
-    std::unique_ptr<Node> handlePrintStatement();
-    std::unique_ptr<Node> handleReturnStatement(DataType data);
-    std::unique_ptr<Node> handleMatchStatement();
-    std::vector<std::unique_ptr<Node>> handleFunctionBody();
-    std::vector<std::unique_ptr<Node>> collectFunctionParameters();
-    void handleFunction();
+    // Statements
+    std::unique_ptr<Node> parseStatement();
+    std::unique_ptr<Node> parseBlock();
+    std::unique_ptr<Node> parseIfStatement();
+    std::unique_ptr<Node> parseMatchStatement();
+    std::unique_ptr<Node> parseForStatement();
+    std::unique_ptr<Node> parseWhileStatement();
+    std::unique_ptr<Node> parseLoopStatement();
+    std::unique_ptr<Node> parseReturnStatement();
+    std::unique_ptr<Node> parseAssignmentStatement();
+
+    // Expressions
+    std::unique_ptr<Node> parseExpression(int precedence = 0);
+    std::unique_ptr<Node> parsePrimary();
+
+    // Type annotations
+    std::unique_ptr<Node> parseTypeAnnotation();
+
+    // Helpers
+    int getOperatorPrecedence(const Token& token);
 };
 
 #endif // PARSER_H

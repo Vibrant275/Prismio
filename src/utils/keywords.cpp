@@ -31,6 +31,7 @@ const std::unordered_set<std::string> loops = {
     "while",
     "loop",
     "for",
+    "in"
 };
 
 const std::unordered_set<std::string> declarations = {
@@ -56,10 +57,9 @@ const std::unordered_set<std::string> functionStarters =
     "while",
     "loop",
     "print",
+    "println",
     "return"
 };
-
-
 
 bool isKeyword(const std::string& value)
 {
