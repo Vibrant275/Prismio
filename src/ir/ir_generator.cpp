@@ -585,9 +585,50 @@ llvm::Value* IRGenerator::generateCallExpr(const CallExprNode* node) {
         return nullptr;
     }
 
-    llvm::Function* calleeFunc = module->getFunction(calleeNode->name);
+    std::string functionName = calleeNode->name;
+
+    // Handle print/println overloading based on argument type
+    if ((functionName == "println" || functionName == "print") && node->arguments.size() == 1) {
+        llvm::Value* arg = generateExpression(node->arguments[0].get());
+        if (!arg) return nullptr;
+
+        llvm::Type* argType = arg->getType();
+
+        // Determine which overload to call
+        if (argType->isIntegerTy(32)) {
+            functionName = functionName + "_int";
+        } else if (argType->isIntegerTy(1)) {
+            // Convert i1 to i32 for bool printing
+            arg = builder->CreateZExt(arg, llvm::Type::getInt32Ty(*context));
+            functionName = functionName + "_bool";
+        } else if (argType->isIntegerTy(8)) {
+            functionName = functionName + "_char";
+        } else if (argType->isPointerTy()) {
+            // String type - use default println/print
+        } else {
+            std::cerr << "Unsupported type for " << calleeNode->name << std::endl;
+            return nullptr;
+        }
+
+        llvm::Function* calleeFunc = module->getFunction(functionName);
+        if (!calleeFunc) {
+            std::cerr << "Unknown function: " << functionName << std::endl;
+            return nullptr;
+        }
+
+        llvm::SmallVector<llvm::Value*, 1> args;
+        args.push_back(arg);
+
+        if (calleeFunc->getReturnType()->isVoidTy()) {
+            return builder->CreateCall(calleeFunc, args);
+        }
+        return builder->CreateCall(calleeFunc, args, "calltmp");
+    }
+
+    // Regular function call
+    llvm::Function* calleeFunc = module->getFunction(functionName);
     if (!calleeFunc) {
-        std::cerr << "Unknown function: " << calleeNode->name << std::endl;
+        std::cerr << "Unknown function: " << functionName << std::endl;
         return nullptr;
     }
 
@@ -601,7 +642,7 @@ llvm::Value* IRGenerator::generateCallExpr(const CallExprNode* node) {
 
     // Debug: print function signature
     if (args.size() != calleeFunc->arg_size() && !calleeFunc->isVarArg()) {
-        std::cerr << "Error: Function " << calleeNode->name
+        std::cerr << "Error: Function " << functionName
                   << " expects " << calleeFunc->arg_size()
                   << " arguments but got " << args.size() << std::endl;
         return nullptr;
@@ -650,13 +691,17 @@ llvm::AllocaInst* IRGenerator::createEntryBlockAlloca(llvm::Function* function,
 }
 
 void IRGenerator::declareBuiltins() {
-    // Declare printf using SmallVector
     llvm::Type* int8PtrType = llvm::PointerType::get(llvm::Type::getInt8Ty(*context), 0);
+    llvm::Type* int32Type = llvm::Type::getInt32Ty(*context);
+    llvm::Type* int8Type = llvm::Type::getInt8Ty(*context);
+    llvm::Type* voidType = llvm::Type::getVoidTy(*context);
+
+    // Declare printf
     llvm::SmallVector<llvm::Type*, 1> printfArgs;
     printfArgs.push_back(int8PtrType);
 
     llvm::FunctionType* printfType = llvm::FunctionType::get(
-        llvm::Type::getInt32Ty(*context),
+        int32Type,
         printfArgs,
         true
     );
@@ -668,20 +713,127 @@ void IRGenerator::declareBuiltins() {
         module.get()
     );
 
-    // Declare println as wrapper around printf
-    llvm::SmallVector<llvm::Type*, 1> printlnArgs;
-    printlnArgs.push_back(int8PtrType);
+    // Declare println(string)
+    llvm::SmallVector<llvm::Type*, 1> printlnStrArgs;
+    printlnStrArgs.push_back(int8PtrType);
 
-    llvm::FunctionType* printlnType = llvm::FunctionType::get(
-        llvm::Type::getVoidTy(*context),
-        printlnArgs,
+    llvm::FunctionType* printlnStrType = llvm::FunctionType::get(
+        voidType,
+        printlnStrArgs,
         false
     );
 
     llvm::Function::Create(
-        printlnType,
+        printlnStrType,
         llvm::Function::ExternalLinkage,
         "println",
+        module.get()
+    );
+
+    // Declare print(string)
+    llvm::FunctionType* printStrType = llvm::FunctionType::get(
+        voidType,
+        printlnStrArgs,
+        false
+    );
+
+    llvm::Function::Create(
+        printStrType,
+        llvm::Function::ExternalLinkage,
+        "print",
+        module.get()
+    );
+
+    // Declare println_int(i32)
+    llvm::SmallVector<llvm::Type*, 1> printIntArgs;
+    printIntArgs.push_back(int32Type);
+
+    llvm::FunctionType* printlnIntType = llvm::FunctionType::get(
+        voidType,
+        printIntArgs,
+        false
+    );
+
+    llvm::Function::Create(
+        printlnIntType,
+        llvm::Function::ExternalLinkage,
+        "println_int",
+        module.get()
+    );
+
+    // Declare print_int(i32)
+    llvm::FunctionType* printIntType = llvm::FunctionType::get(
+        voidType,
+        printIntArgs,
+        false
+    );
+
+    llvm::Function::Create(
+        printIntType,
+        llvm::Function::ExternalLinkage,
+        "print_int",
+        module.get()
+    );
+
+    // Declare println_bool(i1)
+    llvm::SmallVector<llvm::Type*, 1> printBoolArgs;
+    printBoolArgs.push_back(int32Type);  // Use i32 for bool to match C convention
+
+    llvm::FunctionType* printlnBoolType = llvm::FunctionType::get(
+        voidType,
+        printBoolArgs,
+        false
+    );
+
+    llvm::Function::Create(
+        printlnBoolType,
+        llvm::Function::ExternalLinkage,
+        "println_bool",
+        module.get()
+    );
+
+    // Declare print_bool(i1)
+    llvm::FunctionType* printBoolType = llvm::FunctionType::get(
+        voidType,
+        printBoolArgs,
+        false
+    );
+
+    llvm::Function::Create(
+        printBoolType,
+        llvm::Function::ExternalLinkage,
+        "print_bool",
+        module.get()
+    );
+
+    // Declare println_char(i8)
+    llvm::SmallVector<llvm::Type*, 1> printCharArgs;
+    printCharArgs.push_back(int8Type);
+
+    llvm::FunctionType* printlnCharType = llvm::FunctionType::get(
+        voidType,
+        printCharArgs,
+        false
+    );
+
+    llvm::Function::Create(
+        printlnCharType,
+        llvm::Function::ExternalLinkage,
+        "println_char",
+        module.get()
+    );
+
+    // Declare print_char(i8)
+    llvm::FunctionType* printCharType = llvm::FunctionType::get(
+        voidType,
+        printCharArgs,
+        false
+    );
+
+    llvm::Function::Create(
+        printCharType,
+        llvm::Function::ExternalLinkage,
+        "print_char",
         module.get()
     );
 }

@@ -1,0 +1,12 @@
+fn test_comparisons(a: Int, b: Int) -> Int {
+    if (a == b) {
+        return 1
+    } else {
+        return 0
+    }
+}
+
+fn main() {
+    let result = test_comparisons(5, 10)
+    println("Test 7: Booleans")
+}

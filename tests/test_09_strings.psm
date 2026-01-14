@@ -1,0 +1,14 @@
+fn test_strings() {
+    let msg1 = "Hello"
+    let msg2 = "World"
+    let msg3 = "Compiler"
+    
+    println(msg1)
+    println(msg2)
+    println(msg3)
+}
+
+fn main() {
+    test_strings()
+    println("Test 9: Strings")
+}

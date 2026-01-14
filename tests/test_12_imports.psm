@@ -1,0 +1,7 @@
+import prismio.io
+import prismio.lexer
+import prismio.parser
+
+fn main() {
+    println("Test 12: Imports")
+}

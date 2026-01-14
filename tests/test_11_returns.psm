@@ -1,0 +1,33 @@
+fn classify_number(n: Int) -> Int {
+    if (n < 0) {
+        return 0
+    } else {
+        if (n == 0) {
+            return 1
+        } else {
+            if (n < 10) {
+                return 2
+            } else {
+                return 3
+            }
+        }
+    }
+}
+
+fn early_return(x: Int) -> Int {
+    if (x < 0) {
+        return 0
+    }
+    
+    if (x == 0) {
+        return 1
+    }
+    
+    return x * 2
+}
+
+fn main() {
+    let r1 = classify_number(5)
+    let r2 = early_return(10)
+    println("Test 11: Multiple Returns")
+}

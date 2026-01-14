@@ -1,0 +1,14 @@
+struct Token {
+    type: Int,
+    value: Int,
+    line: Int
+}
+
+struct Lexer {
+    position: Int,
+    line: Int
+}
+
+fn main() {
+    println("Test 4: Structs")
+}

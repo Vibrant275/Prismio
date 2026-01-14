@@ -1,0 +1,18 @@
+enum TokenType {
+    Number,
+    String,
+    Identifier,
+    Keyword,
+    Operator
+}
+
+enum NodeType {
+    BinaryExpr,
+    UnaryExpr,
+    Literal,
+    Variable
+}
+
+fn main() {
+    println("Test 5: Enums")
+}
