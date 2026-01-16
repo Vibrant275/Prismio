@@ -477,18 +477,59 @@ llvm::Value* IRGenerator::generateReturnStatement(const ReturnStatementNode* nod
 llvm::Value* IRGenerator::generateVariableDecl(const VariableDeclNode* node) {
     llvm::Type* varType = llvm::Type::getInt32Ty(*context);
 
+    // Determine variable type
     if (node->type_annotation) {
         varType = convertType(dynamic_cast<TypeAnnotationNode*>(node->type_annotation.get()));
+    } else if (node->initializer) {
+        // Infer type from initializer
+        auto* litNode = dynamic_cast<LiteralExprNode*>(node->initializer.get());
+        if (litNode) {
+            if (litNode->literal_type == TokenType::STRING_LITERAL) {
+                varType = llvm::PointerType::get(llvm::Type::getInt8Ty(*context), 0);
+            } else if (litNode->literal_type == TokenType::NUMBER_LITERAL) {
+                varType = llvm::Type::getInt32Ty(*context);
+            } else if (litNode->literal_type == TokenType::BOOL_LITERAL) {
+                varType = llvm::Type::getInt1Ty(*context);
+            } else if (litNode->literal_type == TokenType::CHAR_LITERAL) {
+                varType = llvm::Type::getInt8Ty(*context);
+            }
+        }
     }
 
     llvm::AllocaInst* alloca = createEntryBlockAlloca(currentFunction, node->name, varType);
 
+    // Check if this is a 2D array
+    bool is2D = false;
+    // First check type annotation
+    if (node->type_annotation) {
+        auto* typeAnn = dynamic_cast<TypeAnnotationNode*>(node->type_annotation.get());
+        if (typeAnn && typeAnn->is_array && typeAnn->element_type) {
+            auto* elemType = dynamic_cast<TypeAnnotationNode*>(typeAnn->element_type.get());
+            if (elemType && elemType->is_array) {
+                is2D = true;
+            }
+        }
+    }
+    // Also check initializer (this should catch nested array literals)
+    if (node->initializer && node->initializer->type == NodeType::ARRAY_LITERAL_EXPR) {
+        auto* arrayLit = dynamic_cast<ArrayLiteralExprNode*>(node->initializer.get());
+        if (arrayLit && !arrayLit->elements.empty() && 
+            arrayLit->elements[0]->type == NodeType::ARRAY_LITERAL_EXPR) {
+            is2D = true;
+        }
+    }
+
     if (node->initializer) {
         llvm::Value* initValue = generateExpression(node->initializer.get());
-        builder->CreateStore(initValue, alloca);
+        if (initValue) {
+            builder->CreateStore(initValue, alloca);
+        }
     }
 
     setVariable(node->name, alloca);
+    if (is2D && !scopes.empty()) {
+        scopes.back().is2DArray[node->name] = true;
+    }
 
     return alloca;
 }
@@ -526,29 +567,30 @@ llvm::Value* IRGenerator::generateArrayLiteral(const ArrayLiteralExprNode* node)
     bool isNested = (node->elements[0]->type == NodeType::ARRAY_LITERAL_EXPR);
 
     if (isNested) {
-        // 2D array handling
+        // 2D array - allocate array of pointers to inner arrays
         auto* firstInner = dynamic_cast<ArrayLiteralExprNode*>(node->elements[0].get());
         size_t innerSize = firstInner->elements.size();
 
         llvm::Type* innerElemType = llvm::Type::getInt32Ty(*context);
         llvm::ArrayType* innerArrayType = llvm::ArrayType::get(innerElemType, innerSize);
-        llvm::PointerType* ptrType = llvm::PointerType::get(innerElemType, 0);
 
-        llvm::ArrayType* outerArrayType = llvm::ArrayType::get(
-            ptrType,
+        // Allocate array to hold pointers to each inner array
+        llvm::ArrayType* ptrArrayType = llvm::ArrayType::get(
+            llvm::PointerType::get(innerElemType, 0),
             node->elements.size()
         );
 
-        llvm::AllocaInst* outerArray = createEntryBlockAlloca(
+        llvm::AllocaInst* ptrArray = createEntryBlockAlloca(
             currentFunction,
             "array_literal",
-            outerArrayType
+            ptrArrayType
         );
 
         // Generate each inner array
         for (size_t i = 0; i < node->elements.size(); i++) {
             auto* innerNode = dynamic_cast<ArrayLiteralExprNode*>(node->elements[i].get());
 
+            // Allocate space for this inner array
             llvm::ArrayType* currentInnerType = llvm::ArrayType::get(
                 innerElemType,
                 innerNode->elements.size()
@@ -556,11 +598,11 @@ llvm::Value* IRGenerator::generateArrayLiteral(const ArrayLiteralExprNode* node)
 
             llvm::AllocaInst* innerArray = createEntryBlockAlloca(
                 currentFunction,
-                "array_literal",
+                "inner_array",
                 currentInnerType
             );
 
-            // Fill inner array
+            // Fill the inner array with values
             for (size_t j = 0; j < innerNode->elements.size(); j++) {
                 llvm::Value* elem = generateExpression(innerNode->elements[j].get());
 
@@ -574,22 +616,30 @@ llvm::Value* IRGenerator::generateArrayLiteral(const ArrayLiteralExprNode* node)
                 builder->CreateStore(elem, elemPtr);
             }
 
-            // Store pointer in outer array
-            llvm::Value* outerElemPtr = builder->CreateConstGEP2_32(
-                outerArrayType,
-                outerArray,
-                0, i,
-                "elem_ptr"
+            // Store the pointer to this inner array in the pointer array
+            llvm::Value* innerPtr = builder->CreatePointerCast(
+                innerArray,
+                llvm::PointerType::get(innerElemType, 0)
             );
 
-            llvm::Value* innerPtr = builder->CreateBitCast(innerArray, ptrType);
-            builder->CreateStore(innerPtr, outerElemPtr);
+            llvm::Value* ptrSlot = builder->CreateConstGEP2_32(
+                ptrArrayType,
+                ptrArray,
+                0, i,
+                "ptr_slot"
+            );
+
+            builder->CreateStore(innerPtr, ptrSlot);
         }
 
-        return builder->CreateBitCast(outerArray, ptrType);
+        // Return pointer to the array of pointers
+        return builder->CreatePointerCast(
+            ptrArray,
+            llvm::PointerType::get(llvm::PointerType::get(innerElemType, 0), 0)
+        );
     }
 
-    // 1D array
+    // 1D array - same as before
     llvm::Value* firstElem = generateExpression(node->elements[0].get());
     llvm::Type* elemType = firstElem->getType();
 
@@ -617,7 +667,7 @@ llvm::Value* IRGenerator::generateArrayLiteral(const ArrayLiteralExprNode* node)
         builder->CreateStore(elem, elemPtr);
     }
 
-    return builder->CreateBitCast(
+    return builder->CreatePointerCast(
         arrayAlloca,
         llvm::PointerType::get(elemType, 0)
     );
@@ -667,16 +717,58 @@ llvm::Value* IRGenerator::generateIndexExpr(const IndexExprNode* node) {
 
     // For arrays stored as pointers
     if (arrayValue->getType()->isPointerTy()) {
-        llvm::Type* elemType = llvm::Type::getInt32Ty(*context);
+        // Check if this might be a 2D array
+        bool is2DArray = false;
+        if (node->object->type == NodeType::ARRAY_LITERAL_EXPR) {
+            auto* arrayLit = dynamic_cast<const ArrayLiteralExprNode*>(node->object.get());
+            if (!arrayLit->elements.empty() && 
+                arrayLit->elements[0]->type == NodeType::ARRAY_LITERAL_EXPR) {
+                is2DArray = true;
+            }
+        } else if (node->object->type == NodeType::IDENTIFIER_EXPR) {
+            // For identifiers, check if it was declared as a 2D array
+            auto* identNode = dynamic_cast<const IdentifierExprNode*>(node->object.get());
+            // Search scopes for the variable's 2D array flag
+            for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+                auto found = it->is2DArray.find(identNode->name);
+                if (found != it->is2DArray.end() && found->second) {
+                    is2DArray = true;
+                    break;
+                }
+            }
+        }
 
-        llvm::Value* elemPtr = builder->CreateGEP(
-            elemType,
-            arrayValue,
-            indexValue,
-            "index_ptr"
-        );
+        // Try to detect 2D array: with opaque pointers, we can't check pointee type directly
+        // So we'll use a workaround: try GEP with pointer type first
+        llvm::Type* ptrType = llvm::PointerType::get(llvm::Type::getInt32Ty(*context), 0);
+        
+        if (is2DArray) {
+            // 2D array case: use GEP with pointer type to get the pointer at index
+            llvm::Value* innerPtrSlot = builder->CreateGEP(
+                ptrType,
+                arrayValue,
+                indexValue,
+                "inner_ptr_slot"
+            );
+            
+            // Load the pointer to the inner array
+            llvm::Value* innerArrayPtr = builder->CreateLoad(ptrType, innerPtrSlot, "inner_array_ptr");
+            
+            // Return the pointer to the inner array (not the value)
+            return innerArrayPtr;
+        } else {
+            // 1D array case: use GEP with integer type
+            llvm::Type* elemType = llvm::Type::getInt32Ty(*context);
+            
+            llvm::Value* elemPtr = builder->CreateGEP(
+                elemType,
+                arrayValue,
+                indexValue,
+                "index_ptr"
+            );
 
-        return builder->CreateLoad(elemType, elemPtr, "index_load");
+            return builder->CreateLoad(elemType, elemPtr, "index_load");
+        }
     }
 
     std::cerr << "Error: Array value is not a pointer type" << std::endl;
@@ -765,17 +857,33 @@ llvm::Value* IRGenerator::generateUnaryExpr(const UnaryExprNode* node) {
 
 llvm::Value* IRGenerator::generateLiteralExpr(const LiteralExprNode* node) {
     switch (node->literal_type) {
-        case TokenType::NUMBER_LITERAL:
-            return llvm::ConstantInt::get(*context, llvm::APInt(32, std::stoi(node->value), true));
-        case TokenType::BOOL_LITERAL:
-            return llvm::ConstantInt::get(*context, llvm::APInt(1, node->value == "true" ? 1 : 0));
-        case TokenType::STRING_LITERAL: {
-            return builder->CreateGlobalStringPtr(node->value);
-        }
-        case TokenType::CHAR_LITERAL:
-            return llvm::ConstantInt::get(*context, llvm::APInt(8, node->value[0]));
-        default:
-            return nullptr;
+    case TokenType::NUMBER_LITERAL:
+        return llvm::ConstantInt::get(*context, llvm::APInt(32, std::stoi(node->value), true));
+    case TokenType::BOOL_LITERAL:
+        return llvm::ConstantInt::get(*context, llvm::APInt(1, node->value == "true" ? 1 : 0));
+    case TokenType::STRING_LITERAL: {
+            // Create a global string constant and return pointer to it
+            llvm::Constant* strConstant = llvm::ConstantDataArray::getString(*context, node->value, true);
+            llvm::GlobalVariable* strGlobal = new llvm::GlobalVariable(
+                *module,
+                strConstant->getType(),
+                true,  // isConstant
+                llvm::GlobalValue::PrivateLinkage,
+                strConstant,
+                ".str"
+            );
+            strGlobal->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+
+            // Return pointer to the string (i8*)
+            return builder->CreatePointerCast(
+                strGlobal,
+                llvm::PointerType::get(llvm::Type::getInt8Ty(*context), 0)
+            );
+    }
+    case TokenType::CHAR_LITERAL:
+        return llvm::ConstantInt::get(*context, llvm::APInt(8, node->value[0]));
+    default:
+        return nullptr;
     }
 }
 
@@ -844,27 +952,6 @@ llvm::Value* IRGenerator::generateCallExpr(const CallExprNode* node) {
         return builder->CreateCall(calleeFunc, args);
     }
 
-    // Handle println_char specially when called directly with char
-    if (functionName == "println_char" || functionName == "print_char") {
-        llvm::Function* calleeFunc = module->getFunction(functionName);
-        if (!calleeFunc) {
-            std::cerr << "Unknown function: " << functionName << std::endl;
-            return nullptr;
-        }
-
-        llvm::SmallVector<llvm::Value*, 8> args;
-        for (const auto& argNode : node->arguments) {
-            llvm::Value* argVal = generateExpression(argNode.get());
-            if (argVal) {
-                // If arg is i8 and function expects i8, use directly
-                // Otherwise might need conversion
-                args.push_back(argVal);
-            }
-        }
-
-        return builder->CreateCall(calleeFunc, args);
-    }
-
     // Regular function call
     llvm::Function* calleeFunc = module->getFunction(functionName);
     if (!calleeFunc) {
@@ -877,9 +964,12 @@ llvm::Value* IRGenerator::generateCallExpr(const CallExprNode* node) {
 
     for (const auto& argNode : node->arguments) {
         llvm::Value* argVal = generateExpression(argNode.get());
-        if (!argVal) continue;
+        if (!argVal) {
+            std::cerr << "Failed to generate argument " << paramIdx << " for function " << functionName << std::endl;
+            return nullptr;
+        }
 
-        // Type checking and conversion for regular functions
+        // Type checking and conversion
         if (paramIdx < calleeFunc->arg_size()) {
             llvm::Type* expectedType = calleeFunc->getFunctionType()->getParamType(paramIdx);
             llvm::Type* actualType = argVal->getType();
@@ -890,7 +980,6 @@ llvm::Value* IRGenerator::generateCallExpr(const CallExprNode* node) {
                 unsigned actualBits = actualType->getIntegerBitWidth();
 
                 if (expectedBits > actualBits) {
-                    // Zero extend for unsigned, sign extend for signed
                     argVal = builder->CreateZExt(argVal, expectedType);
                 } else if (expectedBits < actualBits) {
                     argVal = builder->CreateTrunc(argVal, expectedType);
@@ -901,6 +990,15 @@ llvm::Value* IRGenerator::generateCallExpr(const CallExprNode* node) {
                 if (expectedType != actualType) {
                     argVal = builder->CreateBitCast(argVal, expectedType);
                 }
+            }
+            // Handle pointer vs integer mismatch (shouldn't happen but be safe)
+            else if (expectedType->isPointerTy() != actualType->isPointerTy()) {
+                std::cerr << "Type mismatch for argument " << paramIdx
+                          << " in function " << functionName
+                          << ": expected " << (expectedType->isPointerTy() ? "pointer" : "integer")
+                          << " but got " << (actualType->isPointerTy() ? "pointer" : "integer")
+                          << std::endl;
+                return nullptr;
             }
         }
 
