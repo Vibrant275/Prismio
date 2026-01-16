@@ -524,90 +524,156 @@ llvm::Value* IRGenerator::generateArrayLiteral(const ArrayLiteralExprNode* node)
 
     // Check if this is a nested array (2D array)
     bool isNested = false;
+    ArrayLiteralExprNode* firstInnerArray = nullptr;
+
     if (node->elements.size() > 0) {
         if (auto* innerArray = dynamic_cast<ArrayLiteralExprNode*>(node->elements[0].get())) {
             isNested = true;
+            firstInnerArray = innerArray;
         }
     }
 
-    // Get element type from first element
-    llvm::Value* firstElem = generateExpression(node->elements[0].get());
-    llvm::Type* elemType = firstElem->getType();
+    if (isNested && firstInnerArray) {
+        // Handle 2D arrays
+        size_t outerSize = node->elements.size();
+        size_t innerSize = firstInnerArray->elements.size();
 
-    // Create array type
-    llvm::ArrayType* arrayType = llvm::ArrayType::get(
-        elemType,
-        node->elements.size()
-    );
+        // Create pointer type for inner arrays
+        llvm::Type* innerElemType = llvm::Type::getInt32Ty(*context);
+        llvm::PointerType* ptrType = llvm::PointerType::get(innerElemType, 0);
 
-    // Allocate array on stack
-    llvm::AllocaInst* arrayAlloca = createEntryBlockAlloca(
-        currentFunction,
-        "array_literal",
-        arrayType
-    );
+        // Create array type for outer array (array of pointers)
+        llvm::ArrayType* outerArrayType = llvm::ArrayType::get(ptrType, outerSize);
 
-    // Store each element
-    for (size_t i = 0; i < node->elements.size(); i++) {
-        llvm::Value* elemValue = generateExpression(node->elements[i].get());
-
-        // Get pointer to element i
-        std::vector<llvm::Value*> indices;
-        indices.push_back(llvm::ConstantInt::get(*context, llvm::APInt(32, 0)));
-        indices.push_back(llvm::ConstantInt::get(*context, llvm::APInt(32, i)));
-
-        llvm::Value* elemPtr = builder->CreateGEP(
-            arrayType,
-            arrayAlloca,
-            indices,
-            "elem_ptr"
+        // Allocate outer array
+        llvm::AllocaInst* outerArrayAlloca = createEntryBlockAlloca(
+            currentFunction,
+            "array_literal",
+            outerArrayType
         );
 
-        builder->CreateStore(elemValue, elemPtr);
-    }
+        // Process each inner array
+        for (size_t i = 0; i < outerSize; i++) {
+            auto* innerArrayNode = dynamic_cast<ArrayLiteralExprNode*>(node->elements[i].get());
+            if (!innerArrayNode) continue;
 
-    // For nested arrays, return the array pointer directly without bitcast
-    if (isNested) {
-        // Cast to pointer to pointer type
+            // Create inner array type
+            llvm::ArrayType* innerArrayType = llvm::ArrayType::get(
+                innerElemType,
+                innerArrayNode->elements.size()
+            );
+
+            // Allocate inner array
+            llvm::AllocaInst* innerArrayAlloca = createEntryBlockAlloca(
+                currentFunction,
+                "array_literal",
+                innerArrayType
+            );
+
+            // Fill inner array
+            for (size_t j = 0; j < innerArrayNode->elements.size(); j++) {
+                llvm::Value* elemValue = generateExpression(innerArrayNode->elements[j].get());
+
+                llvm::SmallVector<llvm::Value*, 2> indices;
+                indices.push_back(llvm::ConstantInt::get(*context, llvm::APInt(32, 0)));
+                indices.push_back(llvm::ConstantInt::get(*context, llvm::APInt(32, j)));
+
+                llvm::Value* elemPtr = builder->CreateGEP(
+                    innerArrayType,
+                    innerArrayAlloca,
+                    indices,
+                    "elem_ptr"
+                );
+
+                builder->CreateStore(elemValue, elemPtr);
+            }
+
+            // Store pointer to inner array in outer array
+            llvm::SmallVector<llvm::Value*, 2> outerIndices;
+            outerIndices.push_back(llvm::ConstantInt::get(*context, llvm::APInt(32, 0)));
+            outerIndices.push_back(llvm::ConstantInt::get(*context, llvm::APInt(32, i)));
+
+            llvm::Value* outerElemPtr = builder->CreateGEP(
+                outerArrayType,
+                outerArrayAlloca,
+                outerIndices,
+                "elem_ptr"
+            );
+
+            // Cast inner array to pointer
+            llvm::Value* innerPtr = builder->CreateBitCast(
+                innerArrayAlloca,
+                ptrType,
+                "array_ptr"
+            );
+
+            builder->CreateStore(innerPtr, outerElemPtr);
+        }
+
+        // Return pointer to outer array
+        return builder->CreateBitCast(
+            outerArrayAlloca,
+            ptrType,
+            "array_ptr"
+        );
+    } else {
+        // Handle 1D arrays
+        llvm::Value* firstElem = generateExpression(node->elements[0].get());
+        llvm::Type* elemType = firstElem->getType();
+
+        llvm::ArrayType* arrayType = llvm::ArrayType::get(
+            elemType,
+            node->elements.size()
+        );
+
+        llvm::AllocaInst* arrayAlloca = createEntryBlockAlloca(
+            currentFunction,
+            "array_literal",
+            arrayType
+        );
+
+        // Store each element
+        for (size_t i = 0; i < node->elements.size(); i++) {
+            llvm::Value* elemValue = generateExpression(node->elements[i].get());
+
+            llvm::SmallVector<llvm::Value*, 2> indices;
+            indices.push_back(llvm::ConstantInt::get(*context, llvm::APInt(32, 0)));
+            indices.push_back(llvm::ConstantInt::get(*context, llvm::APInt(32, i)));
+
+            llvm::Value* elemPtr = builder->CreateGEP(
+                arrayType,
+                arrayAlloca,
+                indices,
+                "elem_ptr"
+            );
+
+            builder->CreateStore(elemValue, elemPtr);
+        }
+
+        // Cast to pointer
         llvm::Value* arrayPtr = builder->CreateBitCast(
             arrayAlloca,
             llvm::PointerType::get(elemType, 0),
             "array_ptr"
         );
+
         return arrayPtr;
     }
-
-    // Cast to pointer
-    llvm::Value* arrayPtr = builder->CreateBitCast(
-        arrayAlloca,
-        llvm::PointerType::get(elemType, 0),
-        "array_ptr"
-    );
-
-    return arrayPtr;
 }
 
 llvm::Value* IRGenerator::generateIndexExpr(const IndexExprNode* node) {
     llvm::Value* arrayPtr = generateExpression(node->object.get());
     llvm::Value* indexValue = generateExpression(node->index.get());
 
-    // Get element type (assume i32 for now)
-    llvm::Type* elemType;
-
-    // Check if the object is another index expression (chained indexing like arr[i][j])
-    if (auto* innerIndex = dynamic_cast<IndexExprNode*>(node->object.get())) {
-        // For nested arrays, the element type is still i32
-        elemType = llvm::Type::getInt32Ty(*context);
-    } else {
-        // For first-level access, determine from pointer type
-        if (arrayPtr->getType()->isPointerTy()) {
-            elemType = llvm::Type::getInt32Ty(*context); // Assume i32 for now
-        } else {
-            elemType = arrayPtr->getType();
-        }
+    if (!arrayPtr || !indexValue) {
+        std::cerr << "Error: Invalid array or index in index expression" << std::endl;
+        return nullptr;
     }
 
-    // Create GEP instruction
+    // Determine element type - default to i32 for now
+    llvm::Type* elemType = llvm::Type::getInt32Ty(*context);
+
+    // Create GEP instruction to get pointer to element
     llvm::Value* elemPtr = builder->CreateGEP(
         elemType,
         arrayPtr,
@@ -615,7 +681,7 @@ llvm::Value* IRGenerator::generateIndexExpr(const IndexExprNode* node) {
         "index_ptr"
     );
 
-    // Load the element
+    // Load the element value
     return builder->CreateLoad(elemType, elemPtr, "index_load");
 }
 

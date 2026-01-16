@@ -14,7 +14,6 @@ Token Lexer::createToken(TokenType type, const std::string& value) const
     return Token(type, value, lineNumber_);
 }
 
-
 char Lexer::peek(const int offset = 1) const
 {
     const size_t i = columnIndex_ + offset;
@@ -36,7 +35,7 @@ LexerResult Lexer::tokenize()
         // Skip comments FIRST
         if (currentChar_ == '/' && (peek() == '/' || peek() == '*')) {
             skipComment();
-            continue; // Skip to next iteration
+            continue;
         }
         if (isspace(currentChar_))
         {
@@ -138,7 +137,7 @@ void Lexer::skipWhitespace()
     {
         if (currentChar_ == '\n')
         {
-            lineNumber_++; // Increment lineNumber_ when encountering a newline
+            lineNumber_++;
         }
         advance();
     }
@@ -377,12 +376,40 @@ Token Lexer::separatorToken() const
 Token Lexer::charLiteral()
 {
     std::string value;
-    advance();
+    advance(); // skip opening quote
 
     while (currentChar_ != '\'' && currentChar_ != '\0')
     {
-        value += currentChar_;
-        advance();
+        if (currentChar_ == '\\') {
+            // Handle escape sequences
+            advance();
+
+            if (currentChar_ == '\0') {
+                const std::string error = std::format("Error: Unclosed character literal [ Line:  {}  ]", lineNumber_);
+                submitError(error);
+                break;
+            }
+
+            // Map escape sequences to their actual characters
+            switch (currentChar_) {
+                case 'n':  value += '\n'; break;
+                case 't':  value += '\t'; break;
+                case 'r':  value += '\r'; break;
+                case '0':  value += '\0'; break;
+                case '\\': value += '\\'; break;
+                case '\'': value += '\''; break;
+                case '"':  value += '"'; break;
+                default:
+                    // Invalid escape sequence
+                    value += '\\';
+                    value += currentChar_;
+                    break;
+            }
+            advance();
+        } else {
+            value += currentChar_;
+            advance();
+        }
     }
 
     if (currentChar_ != '\'')
@@ -390,14 +417,19 @@ Token Lexer::charLiteral()
         const std::string error = std::format("Error: Unclosed character literal [ Line:  {}  ]", lineNumber_);
         submitError(error);
     }
-
-    if (value.length() > 1)
+    else if (value.length() > 1)
     {
-        const std::string error = std::format("Error: Invalid character length [ Line:  {}  ]", lineNumber_);
-        submitError(error);
+        // Allow escape sequences to result in a single character
+        // The check should be on the actual character count, not string length
+        // But for simplicity, we only check if it's not an escape sequence
+        bool is_escape = (value.length() == 2 && value[0] == '\\');
+        if (!is_escape && value.length() > 1) {
+            const std::string error = std::format("Error: Invalid character length [ Line:  {}  ]", lineNumber_);
+            submitError(error);
+        }
     }
 
-    advance();
+    advance(); // skip closing quote
     return createToken(TokenType::CHAR_LITERAL, value);
 }
 

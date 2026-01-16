@@ -110,38 +110,33 @@ afterwhile:                                       ; preds = %whilecond
 
 define void @test_2d_array() {
 entry:
-  %array_literal12 = alloca [1 x i32], align 4
+  %array_literal9 = alloca [1 x i32], align 4
   %value = alloca i32, align 4
-  %array_literal7 = alloca [2 x i32], align 4
-  %array_literal3 = alloca [2 x i32], align 4
-  %array_literal2 = alloca [2 x ptr], align 8
-  %array_literal = alloca [2 x i32], align 4
+  %array_literal4 = alloca [2 x i32], align 4
+  %array_literal1 = alloca [2 x i32], align 4
+  %array_literal = alloca [2 x ptr], align 8
   %matrix = alloca ptr, align 8
-  %elem_ptr = getelementptr [2 x i32], ptr %array_literal, i32 0, i32 0
+  %elem_ptr = getelementptr [2 x i32], ptr %array_literal1, i32 0, i32 0
   store i32 1, ptr %elem_ptr, align 4
-  %elem_ptr1 = getelementptr [2 x i32], ptr %array_literal, i32 0, i32 1
-  store i32 2, ptr %elem_ptr1, align 4
-  %elem_ptr4 = getelementptr [2 x i32], ptr %array_literal3, i32 0, i32 0
-  store i32 1, ptr %elem_ptr4, align 4
-  %elem_ptr5 = getelementptr [2 x i32], ptr %array_literal3, i32 0, i32 1
-  store i32 2, ptr %elem_ptr5, align 4
-  %elem_ptr6 = getelementptr [2 x ptr], ptr %array_literal2, i32 0, i32 0
-  store ptr %array_literal3, ptr %elem_ptr6, align 8
-  %elem_ptr8 = getelementptr [2 x i32], ptr %array_literal7, i32 0, i32 0
-  store i32 3, ptr %elem_ptr8, align 4
-  %elem_ptr9 = getelementptr [2 x i32], ptr %array_literal7, i32 0, i32 1
-  store i32 4, ptr %elem_ptr9, align 4
-  %elem_ptr10 = getelementptr [2 x ptr], ptr %array_literal2, i32 0, i32 1
-  store ptr %array_literal7, ptr %elem_ptr10, align 8
-  store ptr %array_literal2, ptr %matrix, align 8
-  %matrix11 = load ptr, ptr %matrix, align 8
-  %index_ptr = getelementptr i32, ptr %matrix11, i32 0
+  %elem_ptr2 = getelementptr [2 x i32], ptr %array_literal1, i32 0, i32 1
+  store i32 2, ptr %elem_ptr2, align 4
+  %elem_ptr3 = getelementptr [2 x ptr], ptr %array_literal, i32 0, i32 0
+  store ptr %array_literal1, ptr %elem_ptr3, align 8
+  %elem_ptr5 = getelementptr [2 x i32], ptr %array_literal4, i32 0, i32 0
+  store i32 3, ptr %elem_ptr5, align 4
+  %elem_ptr6 = getelementptr [2 x i32], ptr %array_literal4, i32 0, i32 1
+  store i32 4, ptr %elem_ptr6, align 4
+  %elem_ptr7 = getelementptr [2 x ptr], ptr %array_literal, i32 0, i32 1
+  store ptr %array_literal4, ptr %elem_ptr7, align 8
+  store ptr %array_literal, ptr %matrix, align 8
+  %matrix8 = load ptr, ptr %matrix, align 8
+  %index_ptr = getelementptr i32, ptr %matrix8, i32 0
   %index_load = load i32, ptr %index_ptr, align 4
   store i32 %index_load, ptr %value, align 4
-  %elem_ptr13 = getelementptr [1 x i32], ptr %array_literal12, i32 0, i32 0
-  store i32 1, ptr %elem_ptr13, align 4
-  %value14 = load i32, ptr %value, align 4
-  call void @println_int(i32 %value14)
+  %elem_ptr10 = getelementptr [1 x i32], ptr %array_literal9, i32 0, i32 0
+  store i32 1, ptr %elem_ptr10, align 4
+  %value11 = load i32, ptr %value, align 4
+  call void @println_int(i32 %value11)
   ret void
 }
 
