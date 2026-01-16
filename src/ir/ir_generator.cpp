@@ -670,19 +670,53 @@ llvm::Value* IRGenerator::generateIndexExpr(const IndexExprNode* node) {
         return nullptr;
     }
 
-    // Determine element type - default to i32 for now
+    // Check if this is a nested index expression (2D array)
+    // e.g., matrix[0][1] where node->object is itself an IndexExprNode
+    bool isNestedIndex = (node->object->type == NodeType::INDEX_EXPR);
+
+    if (isNestedIndex) {
+        // For 2D arrays: outer index gives us a pointer to inner array
+        // arrayPtr is already the result of the first index operation (pointer to row)
+        // Now we need to index into that row
+
+        // The arrayPtr should be a pointer type
+        if (!arrayPtr->getType()->isPointerTy()) {
+            std::cerr << "Error: Expected pointer type for nested array index" << std::endl;
+            return nullptr;
+        }
+
+        // Get element type (should be i32 for Int arrays)
+        llvm::Type* elemType = llvm::Type::getInt32Ty(*context);
+
+        // Create GEP to index into the row
+        llvm::Value* elemPtr = builder->CreateGEP(
+            elemType,
+            arrayPtr,
+            indexValue,
+            "nested_index_ptr"
+        );
+
+        // Load the element
+        return builder->CreateLoad(elemType, elemPtr, "nested_index_load");
+    }
+
+    // Regular 1D array indexing
     llvm::Type* elemType = llvm::Type::getInt32Ty(*context);
 
-    // Create GEP instruction to get pointer to element
-    llvm::Value* elemPtr = builder->CreateGEP(
-        elemType,
-        arrayPtr,
-        indexValue,
-        "index_ptr"
-    );
+    // For 1D arrays stored as pointers
+    if (arrayPtr->getType()->isPointerTy()) {
+        llvm::Value* elemPtr = builder->CreateGEP(
+            elemType,
+            arrayPtr,
+            indexValue,
+            "index_ptr"
+        );
 
-    // Load the element value
-    return builder->CreateLoad(elemType, elemPtr, "index_load");
+        return builder->CreateLoad(elemType, elemPtr, "index_load");
+    }
+
+    std::cerr << "Error: Invalid array type in index expression" << std::endl;
+    return nullptr;
 }
 
 llvm::Value* IRGenerator::generateExpression(const Node* node) {
@@ -829,7 +863,8 @@ llvm::Value* IRGenerator::generateCallExpr(const CallExprNode* node) {
         } else if (argType->isIntegerTy(8)) {
             functionName = functionName + "_char";
         } else if (argType->isPointerTy()) {
-            // String type - use default println/print
+            // Assume string pointer - use default println/print
+            // (Opaque pointers in LLVM 14+ don't expose element type)
         } else {
             std::cerr << "Unsupported type for " << calleeNode->name << std::endl;
             return nullptr;
@@ -858,14 +893,14 @@ llvm::Value* IRGenerator::generateCallExpr(const CallExprNode* node) {
     }
 
     llvm::SmallVector<llvm::Value*, 8> args;
-    for (const auto& arg : node->arguments) {
-        llvm::Value* argVal = generateExpression(arg.get());
+    for (const auto& argNode : node->arguments) {
+        llvm::Value* argVal = generateExpression(argNode.get());
         if (argVal) {
             args.push_back(argVal);
         }
     }
 
-    // Debug: print function signature
+    // Check argument count (allow varargs)
     if (args.size() != calleeFunc->arg_size() && !calleeFunc->isVarArg()) {
         std::cerr << "Error: Function " << functionName
                   << " expects " << calleeFunc->arg_size()
@@ -902,8 +937,8 @@ llvm::Type* IRGenerator::convertType(const TypeAnnotationNode* typeNode) {
             );
             llvm::Type* elemType = convertType(elemTypeNode);
 
-            // For now, represent arrays as pointers
-            // Later we'll add proper array structures
+            // Represent arrays as pointers
+            // In LLVM 14+, use opaque pointer type
             return llvm::PointerType::get(elemType, 0);
         }
     }

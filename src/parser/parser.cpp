@@ -633,6 +633,42 @@ std::unique_ptr<Node> Parser::parsePrimary() {
         return lit;
     }
 
+    if (check(TokenType::IDENTIFIER) && peek(1).type == TokenType::SEPARATOR &&
+    peek(1).value == "{") {
+
+        auto structLit = std::make_unique<StructLiteralExprNode>();
+
+        // Struct name
+        structLit->struct_name = currentToken().value;
+        advance();
+
+        // Opening brace
+        expect(TokenType::SEPARATOR, "{", "struct literal");
+
+        // Parse field initializers
+        while (!check(TokenType::SEPARATOR, "}")) {
+            // Field name
+            expect(TokenType::IDENTIFIER, "field name");
+            std::string fieldName = tokens[position - 1].value;
+
+            // Colon
+            expect(TokenType::SEPARATOR, ":", "field initializer");
+
+            // Field value
+            auto fieldValue = parseExpression();
+
+            structLit->field_values.push_back({fieldName, std::move(fieldValue)});
+
+            // Optional comma
+            if (!check(TokenType::SEPARATOR, "}")) {
+                expect(TokenType::SEPARATOR, ",", "struct literal");
+            }
+        }
+
+        expect(TokenType::SEPARATOR, "}", "struct literal");
+        return structLit;
+    }
+
     // Identifiers and function calls
     if (check(TokenType::IDENTIFIER)) {
         auto ident = std::make_unique<IdentifierExprNode>();
@@ -659,6 +695,17 @@ std::unique_ptr<Node> Parser::parsePrimary() {
             index->object = std::move(ident);
             index->index = parseExpression();
             expect(TokenType::SEPARATOR, "]", "array index");
+
+            // Support chained indexing for multi-dimensional arrays
+            // e.g., matrix[0][1]
+            while (match(TokenType::SEPARATOR, "[")) {
+                auto chainedIndex = std::make_unique<IndexExprNode>();
+                chainedIndex->object = std::move(index);
+                chainedIndex->index = parseExpression();
+                expect(TokenType::SEPARATOR, "]", "array index");
+                index = std::move(chainedIndex);
+            }
+
             return index;
         }
 

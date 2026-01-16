@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import os
 from pathlib import Path
 
 # --------------------------------------------------
@@ -19,6 +20,14 @@ def run(cmd):
         sys.exit(result.returncode)
     return result
 
+def cleanup_files(*files):
+    """Remove temporary files"""
+    for file in files:
+        if os.path.exists(file):
+            try:
+                os.remove(file)
+            except:
+                pass
 
 def main():
     tests = sorted(Path(".").glob("test_*.psm"))
@@ -66,6 +75,8 @@ def main():
     # Path(obj).unlink(missing_ok=True)
     # Path(exe).unlink(missing_ok=True)
     # Path("runtime.obj").unlink(missing_ok=True)
+    # Cleanup
+    cleanup_files(ir, obj, exe)
 
 
 if __name__ == "__main__":

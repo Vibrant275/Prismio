@@ -61,7 +61,7 @@ enum class NodeType
     BLOCK,
     TYPE_ANNOTATION,
 
-    EXTERN_FUNCTION, ARRAY_LITERAL_EXPR
+    EXTERN_FUNCTION, ARRAY_LITERAL_EXPR, STRUCT_LITERAL_EXPR
 };
 
 // --------------------------------------------------
@@ -214,6 +214,14 @@ public:
     StructDeclNode() : Node(NodeType::STRUCT_DECL)
     {
     }
+};
+
+class StructLiteralExprNode final : public Node {
+public:
+    std::string struct_name;
+    std::vector<std::pair<std::string, std::unique_ptr<Node>>> field_values;
+
+    StructLiteralExprNode() : Node(NodeType::STRUCT_LITERAL_EXPR) {}
 };
 
 class ArrayLiteralExprNode final : public Node {
