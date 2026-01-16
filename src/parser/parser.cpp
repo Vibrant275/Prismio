@@ -633,35 +633,36 @@ std::unique_ptr<Node> Parser::parsePrimary() {
         return lit;
     }
 
+    // Struct literals - check BEFORE regular identifiers
     if (check(TokenType::IDENTIFIER) && peek(1).type == TokenType::SEPARATOR &&
-    peek(1).value == "{") {
+        peek(1).value == "{") {
 
         auto structLit = std::make_unique<StructLiteralExprNode>();
-
-        // Struct name
         structLit->struct_name = currentToken().value;
         advance();
 
-        // Opening brace
         expect(TokenType::SEPARATOR, "{", "struct literal");
 
-        // Parse field initializers
         while (!check(TokenType::SEPARATOR, "}")) {
-            // Field name
             expect(TokenType::IDENTIFIER, "field name");
             std::string fieldName = tokens[position - 1].value;
 
-            // Colon
-            expect(TokenType::SEPARATOR, ":", "field initializer");
+            // Accept both : and = for field initialization
+            if (check(TokenType::SEPARATOR, ":")) {
+                advance();
+            } else if (check(TokenType::ASSIGNMENT_OPERATOR, "=")) {
+                advance();
+            } else {
+                displayError("Expected ':' or '=' in struct field initializer", currentToken());
+                exit(1);
+            }
 
-            // Field value
             auto fieldValue = parseExpression();
 
             structLit->field_values.push_back({fieldName, std::move(fieldValue)});
 
-            // Optional comma
             if (!check(TokenType::SEPARATOR, "}")) {
-                expect(TokenType::SEPARATOR, ",", "struct literal");
+                match(TokenType::SEPARATOR, ",");
             }
         }
 
@@ -690,14 +691,13 @@ std::unique_ptr<Node> Parser::parsePrimary() {
             return call;
         }
 
+        // Array indexing
         if (match(TokenType::SEPARATOR, "[")) {
             auto index = std::make_unique<IndexExprNode>();
             index->object = std::move(ident);
             index->index = parseExpression();
             expect(TokenType::SEPARATOR, "]", "array index");
 
-            // Support chained indexing for multi-dimensional arrays
-            // e.g., matrix[0][1]
             while (match(TokenType::SEPARATOR, "[")) {
                 auto chainedIndex = std::make_unique<IndexExprNode>();
                 chainedIndex->object = std::move(index);
@@ -730,6 +730,7 @@ std::unique_ptr<Node> Parser::parsePrimary() {
         return expr;
     }
 
+    // Array literals
     if (match(TokenType::SEPARATOR, "[")) {
         auto arrayLit = std::make_unique<ArrayLiteralExprNode>();
 
