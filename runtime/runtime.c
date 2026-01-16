@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
+#include <string.h>
 
 // Println function - prints a string and adds a newline
 void println(const char* str) {

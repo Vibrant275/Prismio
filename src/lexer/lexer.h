@@ -54,6 +54,7 @@ private:
     char currentChar_;
 
     void reverse();
+    void skipComment();
 };
 
 #endif  // LEXER_H

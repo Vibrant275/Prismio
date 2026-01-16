@@ -522,6 +522,14 @@ llvm::Value* IRGenerator::generateArrayLiteral(const ArrayLiteralExprNode* node)
         );
     }
 
+    // Check if this is a nested array (2D array)
+    bool isNested = false;
+    if (node->elements.size() > 0) {
+        if (auto* innerArray = dynamic_cast<ArrayLiteralExprNode*>(node->elements[0].get())) {
+            isNested = true;
+        }
+    }
+
     // Get element type from first element
     llvm::Value* firstElem = generateExpression(node->elements[0].get());
     llvm::Type* elemType = firstElem->getType();
@@ -558,6 +566,17 @@ llvm::Value* IRGenerator::generateArrayLiteral(const ArrayLiteralExprNode* node)
         builder->CreateStore(elemValue, elemPtr);
     }
 
+    // For nested arrays, return the array pointer directly without bitcast
+    if (isNested) {
+        // Cast to pointer to pointer type
+        llvm::Value* arrayPtr = builder->CreateBitCast(
+            arrayAlloca,
+            llvm::PointerType::get(elemType, 0),
+            "array_ptr"
+        );
+        return arrayPtr;
+    }
+
     // Cast to pointer
     llvm::Value* arrayPtr = builder->CreateBitCast(
         arrayAlloca,
@@ -573,7 +592,20 @@ llvm::Value* IRGenerator::generateIndexExpr(const IndexExprNode* node) {
     llvm::Value* indexValue = generateExpression(node->index.get());
 
     // Get element type (assume i32 for now)
-    llvm::Type* elemType = llvm::Type::getInt32Ty(*context);
+    llvm::Type* elemType;
+
+    // Check if the object is another index expression (chained indexing like arr[i][j])
+    if (auto* innerIndex = dynamic_cast<IndexExprNode*>(node->object.get())) {
+        // For nested arrays, the element type is still i32
+        elemType = llvm::Type::getInt32Ty(*context);
+    } else {
+        // For first-level access, determine from pointer type
+        if (arrayPtr->getType()->isPointerTy()) {
+            elemType = llvm::Type::getInt32Ty(*context); // Assume i32 for now
+        } else {
+            elemType = arrayPtr->getType();
+        }
+    }
 
     // Create GEP instruction
     llvm::Value* elemPtr = builder->CreateGEP(

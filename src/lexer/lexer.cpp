@@ -33,6 +33,11 @@ LexerResult Lexer::tokenize()
 
     while (currentChar_ != '\0')
     {
+        // Skip comments FIRST
+        if (currentChar_ == '/' && (peek() == '/' || peek() == '*')) {
+            skipComment();
+            continue; // Skip to next iteration
+        }
         if (isspace(currentChar_))
         {
             skipWhitespace();
@@ -92,6 +97,38 @@ void Lexer::reverse()
     {
         columnIndex_--;
         currentChar_ = input_[columnIndex_];
+    }
+}
+
+void Lexer::skipComment() {
+    // Single-line comment
+    if (currentChar_ == '/' && peek() == '/') {
+        while (currentChar_ != '\n' && currentChar_ != '\0') {
+            advance();
+        }
+        if (currentChar_ == '\n') {
+            lineNumber_++;
+            advance();
+        }
+        return;
+    }
+
+    // Multi-line comment
+    if (currentChar_ == '/' && peek() == '*') {
+        advance(); // skip '/'
+        advance(); // skip '*'
+
+        while (currentChar_ != '\0') {
+            if (currentChar_ == '*' && peek() == '/') {
+                advance(); // skip '*'
+                advance(); // skip '/'
+                break;
+            }
+            if (currentChar_ == '\n') {
+                lineNumber_++;
+            }
+            advance();
+        }
     }
 }
 
