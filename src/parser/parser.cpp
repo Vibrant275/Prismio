@@ -127,9 +127,55 @@ std::unique_ptr<Node> Parser::parseImportStatement() {
 // DECLARATIONS
 // ==================================================
 
+std::unique_ptr<Node> Parser::parseExternFunctionDecl() {
+    expect(TokenType::KEYWORD, "extern", "extern function declaration");
+
+    // Expect 'fn' after 'extern'
+    expect(TokenType::KEYWORD, "fn", "extern function declaration");
+
+    auto externFunc = std::make_unique<ExternFunctionNode>();
+
+    // Function name
+    expect(TokenType::IDENTIFIER, "function name");
+    externFunc->name = tokens[position - 1].value;
+
+    // Parameters
+    expect(TokenType::SEPARATOR, "(", "extern function parameters");
+
+    if (!check(TokenType::SEPARATOR, ")")) {
+        do {
+            auto param = std::make_unique<FunctionParameterNode>();
+
+            expect(TokenType::IDENTIFIER, "parameter name");
+            param->name = tokens[position - 1].value;
+
+            expect(TokenType::SEPARATOR, ":", "parameter type");
+            param->type_annotation = parseTypeAnnotation();
+
+            externFunc->parameters.push_back(std::move(param));
+
+        } while (match(TokenType::SEPARATOR, ","));
+    }
+
+    expect(TokenType::SEPARATOR, ")", "extern function parameters");
+
+    // Return type
+    if (match(TokenType::ARROW)) {
+        externFunc->return_type = parseTypeAnnotation();
+    }
+
+    // Extern functions have no body - they're just declarations
+    // No function body for extern functions
+
+    return externFunc;
+}
+
 std::unique_ptr<Node> Parser::parseDeclaration() {
     if (check(TokenType::KEYWORD, "let")) {
         return parseVariableDecl();
+    }
+    if (check(TokenType::KEYWORD, "extern")) {  // ADD THIS BLOCK
+        return parseExternFunctionDecl();
     }
     if (check(TokenType::KEYWORD, "fn")) {
         return parseFunctionDecl();
@@ -608,6 +654,14 @@ std::unique_ptr<Node> Parser::parsePrimary() {
             return call;
         }
 
+        if (match(TokenType::SEPARATOR, "[")) {
+            auto index = std::make_unique<IndexExprNode>();
+            index->object = std::move(ident);
+            index->index = parseExpression();
+            expect(TokenType::SEPARATOR, "]", "array index");
+            return index;
+        }
+
         // Member access
         if (match(TokenType::SEPARATOR, ".")) {
             auto member = std::make_unique<MemberAccessExprNode>();
@@ -627,6 +681,19 @@ std::unique_ptr<Node> Parser::parsePrimary() {
         auto expr = parseExpression();
         expect(TokenType::SEPARATOR, ")", "parenthesized expression");
         return expr;
+    }
+
+    if (match(TokenType::SEPARATOR, "[")) {
+        auto arrayLit = std::make_unique<ArrayLiteralExprNode>();
+
+        if (!check(TokenType::SEPARATOR, "]")) {
+            do {
+                arrayLit->elements.push_back(parseExpression());
+            } while (match(TokenType::SEPARATOR, ","));
+        }
+
+        expect(TokenType::SEPARATOR, "]", "array literal");
+        return arrayLit;
     }
 
     // Unary operators
@@ -654,6 +721,17 @@ std::unique_ptr<Node> Parser::parseTypeAnnotation() {
         typeNode->is_reference = true;
     }
 
+    // Check for array syntax: [Type]
+    if (match(TokenType::SEPARATOR, "[")) {
+        typeNode->is_array = true;
+
+        // Parse element type recursively
+        typeNode->element_type = parseTypeAnnotation();
+
+        expect(TokenType::SEPARATOR, "]", "array type");
+        return typeNode;
+    }
+
     // Type name
     if (check(TokenType::IDENTIFIER) || check(TokenType::KEYWORD)) {
         typeNode->type_name = currentToken().value;
@@ -661,12 +739,6 @@ std::unique_ptr<Node> Parser::parseTypeAnnotation() {
     } else {
         displayError("Expected type name", currentToken());
         exit(1);
-    }
-
-    // Check for array ([])
-    if (match(TokenType::SEPARATOR, "[")) {
-        typeNode->is_array = true;
-        expect(TokenType::SEPARATOR, "]", "array type");
     }
 
     return typeNode;

@@ -58,6 +58,7 @@ private:
 
     // Top-level generation
     void generateImport(const ImportStatementNode* node);
+    void generateExternFunction(const ExternFunctionNode* node);
     void generateGlobalVariable(const VariableDeclNode* node);
     void generateFunction(const FunctionNode* node);
     void generateStruct(const StructDeclNode* node);
@@ -76,7 +77,9 @@ private:
     llvm::Value* generateVariableDecl(const VariableDeclNode* node);
     llvm::Value* generateAssignmentStatement(const AssignmentStatementNode* node);
     llvm::Value* generateExpressionStatement(const ExpressionStatementNode* node);
+    llvm::Value* generateArrayLiteral(const ArrayLiteralExprNode* node);
 
+    llvm::Value* generateIndexExpr(const IndexExprNode* node);
     // Expression generation
     llvm::Value* generateExpression(const Node* node);
     llvm::Value* generateBinaryExpr(const BinaryExprNode* node);

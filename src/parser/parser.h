@@ -29,6 +29,7 @@ private:
 
     // Top-level parsing
     std::unique_ptr<Node> parseImportStatement();
+    std::unique_ptr<Node> parseExternFunctionDecl();
     std::unique_ptr<Node> parseDeclaration();
 
     // Declarations

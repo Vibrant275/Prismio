@@ -10,6 +10,7 @@ enum class DataType {
     STRING,
     CHAR,
     BOOLEAN,
+    ARRAY,
     UNKNOWN
 };
 

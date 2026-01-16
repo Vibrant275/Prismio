@@ -55,6 +55,9 @@ void IRGenerator::generate(const ModuleNode& moduleNode) {
             case NodeType::IMPORT_STATEMENT:
                 generateImport(dynamic_cast<ImportStatementNode*>(stmt.get()));
                 break;
+        case NodeType::EXTERN_FUNCTION:  // ADD THIS CASE
+            generateExternFunction(dynamic_cast<ExternFunctionNode*>(stmt.get()));
+            break;
             case NodeType::VARIABLE_DECL:
                 generateGlobalVariable(dynamic_cast<VariableDeclNode*>(stmt.get()));
                 break;
@@ -83,6 +86,49 @@ void IRGenerator::generate(const ModuleNode& moduleNode) {
 void IRGenerator::generateImport(const ImportStatementNode* node) {
     // For now, imports are no-op in IR generation
     // Later we'll link against other modules
+}
+
+void IRGenerator::generateExternFunction(const ExternFunctionNode* node) {
+    // Build parameter types using SmallVector
+    llvm::SmallVector<llvm::Type*, 8> paramTypes;
+    for (const auto& param : node->parameters) {
+        auto* paramNode = dynamic_cast<FunctionParameterNode*>(param.get());
+        auto* typeNode = dynamic_cast<TypeAnnotationNode*>(paramNode->type_annotation.get());
+        llvm::Type* paramType = convertType(typeNode);
+        paramTypes.push_back(paramType);
+    }
+
+    // Build return type
+    llvm::Type* returnType = llvm::Type::getVoidTy(*context);
+    if (node->return_type) {
+        auto* typeNode = dynamic_cast<TypeAnnotationNode*>(node->return_type.get());
+        returnType = convertType(typeNode);
+    }
+
+    // Create function type
+    llvm::FunctionType* funcType = llvm::FunctionType::get(
+        returnType,
+        paramTypes,
+        node->is_vararg  // variadic flag
+    );
+
+    // Create extern function declaration (no body)
+    llvm::Function* function = llvm::Function::Create(
+        funcType,
+        llvm::Function::ExternalLinkage,  // External linkage for C functions
+        node->name,
+        module.get()
+    );
+
+    // Set parameter names
+    unsigned idx = 0;
+    for (auto& arg : function->args()) {
+        auto* paramNode = dynamic_cast<FunctionParameterNode*>(node->parameters[idx].get());
+        arg.setName(paramNode->name);
+        idx++;
+    }
+
+    // No body generation for extern functions - they're just declarations
 }
 
 void IRGenerator::generateGlobalVariable(const VariableDeclNode* node) {
@@ -469,6 +515,78 @@ llvm::Value* IRGenerator::generateExpressionStatement(const ExpressionStatementN
     return generateExpression(node->expression.get());
 }
 
+llvm::Value* IRGenerator::generateArrayLiteral(const ArrayLiteralExprNode* node) {
+    if (node->elements.empty()) {
+        return llvm::ConstantPointerNull::get(
+            llvm::PointerType::get(llvm::Type::getInt32Ty(*context), 0)
+        );
+    }
+
+    // Get element type from first element
+    llvm::Value* firstElem = generateExpression(node->elements[0].get());
+    llvm::Type* elemType = firstElem->getType();
+
+    // Create array type
+    llvm::ArrayType* arrayType = llvm::ArrayType::get(
+        elemType,
+        node->elements.size()
+    );
+
+    // Allocate array on stack
+    llvm::AllocaInst* arrayAlloca = createEntryBlockAlloca(
+        currentFunction,
+        "array_literal",
+        arrayType
+    );
+
+    // Store each element
+    for (size_t i = 0; i < node->elements.size(); i++) {
+        llvm::Value* elemValue = generateExpression(node->elements[i].get());
+
+        // Get pointer to element i
+        std::vector<llvm::Value*> indices;
+        indices.push_back(llvm::ConstantInt::get(*context, llvm::APInt(32, 0)));
+        indices.push_back(llvm::ConstantInt::get(*context, llvm::APInt(32, i)));
+
+        llvm::Value* elemPtr = builder->CreateGEP(
+            arrayType,
+            arrayAlloca,
+            indices,
+            "elem_ptr"
+        );
+
+        builder->CreateStore(elemValue, elemPtr);
+    }
+
+    // Cast to pointer
+    llvm::Value* arrayPtr = builder->CreateBitCast(
+        arrayAlloca,
+        llvm::PointerType::get(elemType, 0),
+        "array_ptr"
+    );
+
+    return arrayPtr;
+}
+
+llvm::Value* IRGenerator::generateIndexExpr(const IndexExprNode* node) {
+    llvm::Value* arrayPtr = generateExpression(node->object.get());
+    llvm::Value* indexValue = generateExpression(node->index.get());
+
+    // Get element type (assume i32 for now)
+    llvm::Type* elemType = llvm::Type::getInt32Ty(*context);
+
+    // Create GEP instruction
+    llvm::Value* elemPtr = builder->CreateGEP(
+        elemType,
+        arrayPtr,
+        indexValue,
+        "index_ptr"
+    );
+
+    // Load the element
+    return builder->CreateLoad(elemType, elemPtr, "index_load");
+}
+
 llvm::Value* IRGenerator::generateExpression(const Node* node) {
     switch (node->type) {
         case NodeType::BINARY_EXPR:
@@ -481,6 +599,15 @@ llvm::Value* IRGenerator::generateExpression(const Node* node) {
             return generateIdentifierExpr(dynamic_cast<const IdentifierExprNode*>(node));
         case NodeType::CALL_EXPR:
             return generateCallExpr(dynamic_cast<const CallExprNode*>(node));
+    case NodeType::ARRAY_LITERAL_EXPR:
+        return generateArrayLiteral(
+            dynamic_cast<const ArrayLiteralExprNode*>(node)
+        );
+
+    case NodeType::INDEX_EXPR:
+        return generateIndexExpr(
+            dynamic_cast<const IndexExprNode*>(node)
+        );
         case NodeType::MEMBER_ACCESS_EXPR:
             return generateMemberAccessExpr(dynamic_cast<const MemberAccessExprNode*>(node));
         default:
@@ -670,6 +797,17 @@ llvm::Type* IRGenerator::convertType(const TypeAnnotationNode* typeNode) {
         return llvm::Type::getInt8Ty(*context);
     } else if (typeNode->type_name == "String") {
         return llvm::PointerType::get(llvm::Type::getInt8Ty(*context), 0);
+    } else if (typeNode->is_array) {
+        if (typeNode->element_type) {
+            auto* elemTypeNode = dynamic_cast<TypeAnnotationNode*>(
+                typeNode->element_type.get()
+            );
+            llvm::Type* elemType = convertType(elemTypeNode);
+
+            // For now, represent arrays as pointers
+            // Later we'll add proper array structures
+            return llvm::PointerType::get(elemType, 0);
+        }
     }
 
     // Check for user-defined types
@@ -774,6 +912,115 @@ void IRGenerator::declareBuiltins() {
         "print_int",
         module.get()
     );
+
+    // str_equals(s1: String, s2: String) -> Int
+    {
+        llvm::SmallVector<llvm::Type*, 2> params;
+        params.push_back(int8PtrType);
+        params.push_back(int8PtrType);
+
+        llvm::FunctionType* funcType = llvm::FunctionType::get(int32Type, params, false);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage,
+                              "str_equals", module.get());
+    }
+
+    // str_length(s: String) -> Int
+    {
+        llvm::SmallVector<llvm::Type*, 1> params;
+        params.push_back(int8PtrType);
+
+        llvm::FunctionType* funcType = llvm::FunctionType::get(int32Type, params, false);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage,
+                              "str_length", module.get());
+    }
+
+    // str_concat(s1: String, s2: String) -> String
+    {
+        llvm::SmallVector<llvm::Type*, 2> params;
+        params.push_back(int8PtrType);
+        params.push_back(int8PtrType);
+
+        llvm::FunctionType* funcType = llvm::FunctionType::get(int8PtrType, params, false);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage,
+                              "str_concat", module.get());
+    }
+
+    // str_substring(s: String, start: Int, length: Int) -> String
+    {
+        llvm::SmallVector<llvm::Type*, 3> params;
+        params.push_back(int8PtrType);
+        params.push_back(int32Type);
+        params.push_back(int32Type);
+
+        llvm::FunctionType* funcType = llvm::FunctionType::get(int8PtrType, params, false);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage,
+                              "str_substring", module.get());
+    }
+
+    // str_char_at(s: String, index: Int) -> Char
+    {
+        llvm::SmallVector<llvm::Type*, 2> params;
+        params.push_back(int8PtrType);
+        params.push_back(int32Type);
+
+        llvm::FunctionType* funcType = llvm::FunctionType::get(
+            llvm::Type::getInt8Ty(*context), params, false);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage,
+                              "str_char_at", module.get());
+    }
+
+    // str_contains(haystack: String, needle: String) -> Int
+    {
+        llvm::SmallVector<llvm::Type*, 2> params;
+        params.push_back(int8PtrType);
+        params.push_back(int8PtrType);
+
+        llvm::FunctionType* funcType = llvm::FunctionType::get(int32Type, params, false);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage,
+                              "str_contains", module.get());
+    }
+
+    // str_starts_with(s: String, prefix: String) -> Int
+    {
+        llvm::SmallVector<llvm::Type*, 2> params;
+        params.push_back(int8PtrType);
+        params.push_back(int8PtrType);
+
+        llvm::FunctionType* funcType = llvm::FunctionType::get(int32Type, params, false);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage,
+                              "str_starts_with", module.get());
+    }
+
+    // str_index_of(haystack: String, needle: String) -> Int
+    {
+        llvm::SmallVector<llvm::Type*, 2> params;
+        params.push_back(int8PtrType);
+        params.push_back(int8PtrType);
+
+        llvm::FunctionType* funcType = llvm::FunctionType::get(int32Type, params, false);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage,
+                              "str_index_of", module.get());
+    }
+
+    // int_to_str(n: Int) -> String
+    {
+        llvm::SmallVector<llvm::Type*, 1> params;
+        params.push_back(int32Type);
+
+        llvm::FunctionType* funcType = llvm::FunctionType::get(int8PtrType, params, false);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage,
+                              "int_to_str", module.get());
+    }
+
+    // str_to_int(s: String) -> Int
+    {
+        llvm::SmallVector<llvm::Type*, 1> params;
+        params.push_back(int8PtrType);
+
+        llvm::FunctionType* funcType = llvm::FunctionType::get(int32Type, params, false);
+        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage,
+                              "str_to_int", module.get());
+    }
 
     // Declare println_bool(i1)
     llvm::SmallVector<llvm::Type*, 1> printBoolArgs;

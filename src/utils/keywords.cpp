@@ -40,7 +40,8 @@ const std::unordered_set<std::string> declarations = {
     "impl",
     "enum",
     "trait",
-    "fn"
+    "fn",
+    "extern"
 };
 
 const std::unordered_set<std::string> property =
