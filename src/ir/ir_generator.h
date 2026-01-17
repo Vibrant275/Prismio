@@ -43,6 +43,7 @@ private:
     struct Scope {
         std::map<std::string, llvm::AllocaInst*> namedValues;
         std::map<std::string, llvm::Type*> namedTypes;
+        std::map<std::string, bool> is2DArray; // Track if a variable is a 2D array
     };
 
     std::vector<Scope> scopes;

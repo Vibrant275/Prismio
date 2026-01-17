@@ -51,7 +51,7 @@ fn test_string_operations() {
 
 fn test_string_concat() {
     let first = "Hello"
-    let second = " "
+    let second = " f "
     let third = "World"
 
     let temp = str_concat(first, second)
@@ -76,3 +76,19 @@ fn main() {
     test_string_concat()
     test_conversions()
 }
+
+// === Program Output ===
+
+//   s1 equals s2
+//   s1 does not equal s3
+//  Length:
+//   13
+//   Hello
+//   W
+//   Contains 'World'
+//   Starts with 'Hello'
+//   Index of 'World':
+//   7
+//   Hello World
+//   42
+//   123

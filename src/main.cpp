@@ -2,11 +2,13 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <filesystem>
 #include "./lexer/lexer.h"
 #include "./parser/parser.h"
 #include "./parser/node.h"
 #include "./ir/ir_generator.h"
 #include "./utils/extension.h"
+#include "./utils/module_resolver.h"
 
 using namespace std;
 
@@ -276,6 +278,64 @@ int main(int argc, char* argv[])
     ModuleNode ast = parser.parse();
 
     std::cout << "✓ Parsing complete.\n\n";
+    
+    // Process imports
+    std::cout << "=== PROCESSING IMPORTS ===" << std::endl;
+    
+    // Get the directory of the source file for module resolution
+    std::filesystem::path sourcePath(filePath);
+    std::string sourceDir = sourcePath.parent_path().string();
+    if (sourceDir.empty()) {
+        sourceDir = ".";
+    }
+    
+    ModuleResolver resolver(sourceDir);
+    
+    // Store imported modules to keep them alive
+    std::vector<std::unique_ptr<ModuleNode>> importedModules;
+    
+    // Collect all import statements and process them
+    std::vector<size_t> importIndices;
+    for (size_t i = 0; i < ast.statements.size(); i++) {
+        if (ast.statements[i]->type == NodeType::IMPORT_STATEMENT) {
+            importIndices.push_back(i);
+        }
+    }
+    
+    // Process each import
+    for (size_t idx : importIndices) {
+        auto* importNode = dynamic_cast<ImportStatementNode*>(ast.statements[idx].get());
+        
+        std::cout << "Importing: ";
+        for (size_t i = 0; i < importNode->module_path.size(); i++) {
+            if (i > 0) std::cout << ".";
+            std::cout << importNode->module_path[i];
+        }
+        std::cout << std::endl;
+        
+        // Resolve and load the module
+        auto importedModule = resolver.resolveModule(importNode->module_path);
+        if (importedModule) {
+            // Store the imported module to keep it alive
+            importedModules.push_back(std::move(importedModule));
+            auto* modulePtr = importedModules.back().get();
+            
+            // Merge imported declarations into the main module
+            // Add all non-import statements from the imported module
+            for (auto& importedStmt : modulePtr->statements) {
+                // Skip import statements in imported modules (for now)
+                if (importedStmt->type != NodeType::IMPORT_STATEMENT) {
+                    // Move the statement to the main module
+                    ast.statements.push_back(std::move(importedStmt));
+                }
+            }
+            std::cout << "  ✓ Successfully imported" << std::endl;
+        } else {
+            std::cerr << "  ✗ Failed to import module" << std::endl;
+        }
+    }
+    
+    std::cout << "✓ Import processing complete.\n\n";
 
     // Print AST
     std::cout << "=== ABSTRACT SYNTAX TREE ===" << std::endl;

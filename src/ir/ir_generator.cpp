@@ -476,23 +476,20 @@ llvm::Value* IRGenerator::generateReturnStatement(const ReturnStatementNode* nod
 
 llvm::Value* IRGenerator::generateVariableDecl(const VariableDeclNode* node) {
     llvm::Type* varType = llvm::Type::getInt32Ty(*context);
+    llvm::Value* initValue = nullptr;
 
-    // Determine variable type
+    // Determine variable type and generate initializer if present
     if (node->type_annotation) {
         varType = convertType(dynamic_cast<TypeAnnotationNode*>(node->type_annotation.get()));
-    } else if (node->initializer) {
-        // Infer type from initializer
-        auto* litNode = dynamic_cast<LiteralExprNode*>(node->initializer.get());
-        if (litNode) {
-            if (litNode->literal_type == TokenType::STRING_LITERAL) {
-                varType = llvm::PointerType::get(llvm::Type::getInt8Ty(*context), 0);
-            } else if (litNode->literal_type == TokenType::NUMBER_LITERAL) {
-                varType = llvm::Type::getInt32Ty(*context);
-            } else if (litNode->literal_type == TokenType::BOOL_LITERAL) {
-                varType = llvm::Type::getInt1Ty(*context);
-            } else if (litNode->literal_type == TokenType::CHAR_LITERAL) {
-                varType = llvm::Type::getInt8Ty(*context);
-            }
+    }
+    
+    if (node->initializer) {
+        // Generate the initializer expression
+        initValue = generateExpression(node->initializer.get());
+        
+        // Infer type from initializer if no explicit type annotation
+        if (!node->type_annotation && initValue && initValue->getType()) {
+            varType = initValue->getType();
         }
     }
 
@@ -519,8 +516,11 @@ llvm::Value* IRGenerator::generateVariableDecl(const VariableDeclNode* node) {
         }
     }
 
+    // Store initializer value (generate if not already generated)
     if (node->initializer) {
-        llvm::Value* initValue = generateExpression(node->initializer.get());
+        if (!initValue) {
+            initValue = generateExpression(node->initializer.get());
+        }
         if (initValue) {
             builder->CreateStore(initValue, alloca);
         }

@@ -1,0 +1,5 @@
+import 
+
+fn main() {
+let x = 34 + 24 - 2print(x)
+}

@@ -60,6 +60,7 @@ private:
 
     // Helpers
     int getOperatorPrecedence(const Token& token);
+    bool isLeftAssociative(const std::string& op);
 };
 
 #endif // PARSER_H

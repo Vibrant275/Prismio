@@ -599,14 +599,33 @@ std::unique_ptr<Node> Parser::parseExpression(int precedence) {
 
         int currentPrecedence = getOperatorPrecedence(currentToken());
 
-        if (currentPrecedence < precedence || currentPrecedence == 0) {
+        if (currentPrecedence == 0) {
             break;
         }
 
         std::string op = currentToken().value;
+        bool leftAssoc = isLeftAssociative(op);
+        
+        // For left-associative operators, use currentPrecedence
+        // For right-associative operators, use currentPrecedence + 1
+        int nextPrecedence = leftAssoc ? currentPrecedence : currentPrecedence + 1;
+        
+        // Check if we should continue parsing
+        if (leftAssoc) {
+            // For left-associative: break if currentPrecedence < precedence
+            if (currentPrecedence < precedence) {
+                break;
+            }
+        } else {
+            // For right-associative: break if currentPrecedence <= precedence
+            if (currentPrecedence <= precedence) {
+                break;
+            }
+        }
+
         advance();
 
-        auto right = parseExpression(currentPrecedence + 1);
+        auto right = parseExpression(nextPrecedence);
 
         auto binExpr = std::make_unique<BinaryExprNode>();
         binExpr->op = getBinaryOpFromToken(op);
@@ -809,4 +828,13 @@ int Parser::getOperatorPrecedence(const Token& token) {
     if (token.value == "*" || token.value == "/" || token.value == "%") return 6;
 
     return 0;
+}
+
+bool Parser::isLeftAssociative(const std::string& op) {
+    // Most operators are left-associative
+    // Right-associative operators would be things like assignment operators
+    // For now, all arithmetic and relational operators are left-associative
+    return op == "+" || op == "-" || op == "*" || op == "/" || op == "%" ||
+           op == "==" || op == "!=" || op == "<" || op == ">" ||
+           op == "<=" || op == ">=" || op == "and" || op == "or";
 }

@@ -1,0 +1,11 @@
+import utils
+
+fn main() {
+    let result1 = add(5, 3)
+    let result2 = multiply(4, 7)
+    
+    println("5 + 3 = ")
+    println_int(result1)
+    println("4 * 7 = ")
+    println_int(result2)
+}
