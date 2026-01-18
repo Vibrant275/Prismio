@@ -1,0 +1,163 @@
+import token
+import utils
+import keywords
+
+struct Lexer {
+    input: String,
+    pos: Int,
+    line: Int,
+    col: Int
+}
+
+fn create_lexer(input: String) -> Lexer {
+    return Lexer {
+        input: input,
+        pos: 0,
+        line: 1,
+        col: 1
+    }
+}
+
+// Free functions instead of methods
+fn lexer_peek(lex: &Lexer, offset: Int) -> Char {
+    return str_char_at(lex.input, lex.pos + offset)
+}
+
+fn lexer_current(lex: &Lexer) -> Char {
+    return str_char_at(lex.input, lex.pos)
+}
+
+fn lexer_advance(lex: &Lexer) {
+    lex.pos = lex.pos + 1
+    lex.col = lex.col + 1
+}
+
+fn lexer_skip_whitespace(lex: &Lexer) {
+    while (is_space(lexer_current(lex))) {
+        if (lexer_current(lex) == '\n') {
+            lex.line = lex.line + 1
+            lex.col = 0
+        }
+        lexer_advance(lex)
+    }
+}
+
+fn lexer_next_token(lex: &Lexer) -> Token {
+    lexer_skip_whitespace(lex)
+
+    // Check EOF
+    if (lex.pos >= str_length(lex.input)) {
+        return Token {
+            type: TokenType.EOF,
+            value: "EOF",
+            line: lex.line
+        }
+    }
+
+    let c = lexer_current(lex)
+
+    // Identifiers and Keywords
+    if (is_alpha(c)) {
+        let start = lex.pos
+        while (is_alnum(lexer_current(lex))) {
+            lexer_advance(lex)
+        }
+        let length = lex.pos - start
+        let value = str_substring(lex.input, start, length)
+        
+        if (is_keyword(value)) {
+            if (is_boolean(value)) {
+                return Token { type: TokenType.BOOL_LITERAL, value: value, line: lex.line }
+            }
+            return Token { type: TokenType.KEYWORD, value: value, line: lex.line }
+        }
+        
+        return Token { type: TokenType.IDENTIFIER, value: value, line: lex.line }
+    }
+
+    // Numbers
+    if (is_digit(c)) {
+        let start = lex.pos
+        while (is_digit(lexer_current(lex))) {
+            lexer_advance(lex)
+        }
+        // Float support
+        if (lexer_current(lex) == '.') {
+            lexer_advance(lex)
+            while (is_digit(lexer_current(lex))) {
+                lexer_advance(lex)
+            }
+        }
+        
+        let length = lex.pos - start
+        let value = str_substring(lex.input, start, length)
+        return Token { type: TokenType.NUMBER_LITERAL, value: value, line: lex.line }
+    }
+
+    // String Literal
+    if (c == '"') {
+        lexer_advance(lex) // Skip opening quote
+        let start = lex.pos
+        while (lexer_current(lex) != '"' and lex.pos < str_length(lex.input)) {
+            lexer_advance(lex)
+        }
+        
+        let length = lex.pos - start
+        let value = str_substring(lex.input, start, length)
+        
+        if (lexer_current(lex) == '"') {
+            lexer_advance(lex) // Skip closing quote
+        }
+        
+        return Token { type: TokenType.STRING_LITERAL, value: value, line: lex.line }
+    }
+
+    // Operators
+    if (is_operator(c)) {
+        let start = lex.pos
+        lexer_advance(lex)
+
+        // Check for 2-char operators
+        let next = lexer_current(lex)
+        if (c == '=' and next == '=') { lexer_advance(lex) }
+        if (c == '!' and next == '=') { lexer_advance(lex) }
+        if (c == '<' and next == '=') { lexer_advance(lex) }
+        if (c == '>' and next == '=') { lexer_advance(lex) }
+        if (c == '&' and next == '&') { lexer_advance(lex) }
+        if (c == '|' and next == '|') { lexer_advance(lex) }
+        if (c == '-' and next == '>') { lexer_advance(lex) }
+        if (c == '=' and next == '>') { lexer_advance(lex) }
+
+        let length = lex.pos - start
+        let value = str_substring(lex.input, start, length)
+        
+        // Refine type
+        let type = TokenType.ARITHMETIC_OPERATOR
+        if (length == 2) {
+            if (value == "==" or value == "!=" or value == "<=" or value == ">=") {
+                type = TokenType.RELATIONAL_OPERATOR
+            }
+            if (value == "->" or value == "=>") {
+                type = TokenType.ARROW 
+                if (value == "=>") { type = TokenType.FAT_ARROW }
+            }
+        } else {
+            if (c == '<' or c == '>') { type = TokenType.RELATIONAL_OPERATOR }
+            if (c == '=') { type = TokenType.ASSIGNMENT_OPERATOR }
+            if (c == '!') { type = TokenType.NEGATION }
+        }
+        
+        return Token { type: type, value: value, line: lex.line }
+    }
+
+    // Separators
+    if (is_separator(c)) {
+        let val = str_substring(lex.input, lex.pos, 1)
+        lexer_advance(lex)
+        return Token { type: TokenType.SEPARATOR, value: val, line: lex.line }
+    }
+
+    // Unknown
+    lexer_advance(lex)
+    return Token { type: TokenType.UNKNOWN, value: "?", line: lex.line }
+}

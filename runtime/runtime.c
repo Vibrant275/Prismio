@@ -353,3 +353,65 @@ void str_split_free(StringArray* arr) {
     free(arr->parts);
     free(arr);
 }
+
+// ============================================
+// File I/O Functions
+// ============================================
+
+// Check if file exists
+int file_exists(const char* path) {
+    FILE* file = fopen(path, "r");
+    if (file) {
+        fclose(file);
+        return 1;
+    }
+    return 0;
+}
+
+// Read entire file into string
+char* read_file(const char* path) {
+    FILE* file = fopen(path, "rb");
+    if (!file) {
+        return NULL;
+    }
+
+    // Get file size
+    fseek(file, 0, SEEK_END);
+    long size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // Allocate buffer
+    char* buffer = (char*)malloc(size + 1);
+    if (!buffer) {
+        fclose(file);
+        return NULL;
+    }
+
+    // Read file
+    size_t read = fread(buffer, 1, size, file);
+    buffer[read] = '\0';
+
+    fclose(file);
+    return buffer;
+}
+
+// Get directory from file path
+char* get_directory(const char* path) {
+    const char* last_slash = strrchr(path, '/');
+    const char* last_backslash = strrchr(path, '\\');
+
+    const char* separator = last_slash > last_backslash ? last_slash : last_backslash;
+
+    if (!separator) {
+        char* result = (char*)malloc(2);
+        strcpy(result, ".");
+        return result;
+    }
+
+    int len = separator - path;
+    char* result = (char*)malloc(len + 1);
+    strncpy(result, path, len);
+    result[len] = '\0';
+
+    return result;
+}

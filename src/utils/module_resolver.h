@@ -5,6 +5,8 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <set>
+
 #include "../parser/node.h"
 #include "../lexer/lexer.h"
 #include "../parser/parser.h"
@@ -27,6 +29,9 @@ public:
 private:
     std::string basePath;
     std::map<std::string, std::string> cachedSources; // Cache source code instead of parsed modules
+
+    std::map<std::string, std::unique_ptr<ModuleNode>> moduleCache; // Cache parsed modules
+    std::set<std::string> importStack; // Track circular imports
     
     // Convert module path to file path
     std::string modulePathToFilePath(const std::vector<std::string>& modulePath);

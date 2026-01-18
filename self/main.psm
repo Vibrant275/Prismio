@@ -1,5 +1,39 @@
-import 
+import lexer
+import token
+import utils
+
+extern fn read_file(path: String) -> String
 
 fn main() {
-let x = 34 + 24 - 2print(x)
+    println("--- Self-Hosted Lexer Test ---")
+    
+    let path = "tests/test_01_variables.psm"
+    println("Reading file:")
+    println(path)
+    
+    let content = read_file(path)
+    
+    // Simple check (if file read returns empty string on failure, though read_file implementation returns NULL which might crash or be handled as empty by runtime/bridge)
+    // runtime.c returns NULL if fail.
+    // Prismio IR Gen might treat NULL as empty string or crash.
+    // Assuming it works for now.
+    
+    println("Source length:")
+    println_int(str_length(content))
+
+    let lex = create_lexer(content)
+    
+    println("--- Tokens ---")
+    
+    let mut tok = lexer_next_token(&lex)
+    while (tok.type != TokenType.EOF) {
+        print(type_to_string(tok.type))
+        print(": '")
+        print(tok.value)
+        println("'")
+        
+        tok = lexer_next_token(&lex)
+    }
+
+    println("--- End ---")
 }

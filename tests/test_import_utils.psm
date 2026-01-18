@@ -2,7 +2,7 @@ import utils
 
 fn main() {
     let result1 = add(5, 3)
-    let result2 = multiply(4, 7)
+    let result2 = multiply(4, 4)
     
     println("5 + 3 = ")
     println_int(result1)
