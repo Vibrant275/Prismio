@@ -1,39 +1,61 @@
 import lexer
 import token
 import utils
+import ast
+import parser
 
 extern fn read_file(path: String) -> String
 
 fn main() {
-    println("--- Self-Hosted Lexer Test ---")
-    
-    let path = "tests/test_01_variables.psm"
-    println("Reading file:")
-    println(path)
-    
-    let content = read_file(path)
-    
-    // Simple check (if file read returns empty string on failure, though read_file implementation returns NULL which might crash or be handled as empty by runtime/bridge)
-    // runtime.c returns NULL if fail.
-    // Prismio IR Gen might treat NULL as empty string or crash.
-    // Assuming it works for now.
-    
-    println("Source length:")
-    println_int(str_length(content))
+    println("=== Self-Hosted Parser Test ===")
 
-    let lex = create_lexer(content)
-    
-    println("--- Tokens ---")
-    
-    let mut tok = lexer_next_token(&lex)
-    while (tok.type != TokenType.EOF) {
-        print(type_to_string(tok.type))
-        print(": '")
-        print(tok.value)
-        println("'")
-        
-        tok = lexer_next_token(&lex)
+    let path = "main.psm"
+    let content = read_file(path)
+
+    if (str_equals(content, "") == 1) {
+        println("ERROR: Could not read file")
+        return
     }
 
-    println("--- End ---")
+    println("File content:")
+    println(content)
+
+    let lex = create_lexer(content)
+    let head_token = lex_all_tokens(lex)
+    println("✓ Lexing complete")
+
+    // Print tokens
+    let curr_tok = head_token
+    while (curr_tok.type != TokenType.EOF) {
+        print(type_to_string(curr_tok.type))
+        print(": '")
+        print(curr_tok.value)
+        println("'")
+        curr_tok = ptr_to_token(curr_tok.tok_next)
+    }
+    println("---")
+
+    let p = parser_create(head_token)
+    let ast = parse_module(p)
+    println("✓ Parsing complete")
+
+    // AST dump
+    if (ast.kind == NodeKind.MODULE) {
+        println("AST Root: MODULE")
+        let stmt_ptr = ast.child1
+        while (str_equals(stmt_ptr, "") == 0) {
+            let stmt = ptr_to_node(stmt_ptr)
+            if (stmt.kind == NodeKind.VARIABLE_DECL) {
+                print("  VARIABLE_DECL: ") println(stmt.s1)
+            }
+            if (stmt.kind == NodeKind.FUNCTION) {
+                print("  FUNCTION: ") println(stmt.s1)
+            }
+            if (stmt.kind == NodeKind.EXTERN_FUNCTION) {
+                print("  EXTERN_FUNCTION: ") println(stmt.s1)
+            }
+            stmt_ptr = stmt.next
+        }
+    }
+    println("=== Done ===")
 }

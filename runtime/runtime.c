@@ -415,3 +415,9 @@ char* get_directory(const char* path) {
 
     return result;
 }
+
+// Helpers for type punning ASTNode pointers in Prismio
+void* ptr_to_node(void* ptr) { return ptr; }
+void* node_to_ptr(void* ptr) { return ptr; }
+void* ptr_to_token(void* ptr) { return ptr; }
+void* token_to_ptr(void* ptr) { return ptr; }

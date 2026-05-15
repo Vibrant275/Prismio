@@ -6,10 +6,10 @@ from pathlib import Path
 # --------------------------------------------------
 # HARDCODED PATHS (as requested)
 # --------------------------------------------------
-PRISMIO_EXE = "..\\cmake-build-release\\prismio.exe"
-CLANG = "..\\external\\LLVM\\bin\\clang.exe"
-LLC   = "..\\external\\LLVM\\bin\\llvm-llc.exe"
-RUNTIME_C = "..\\runtime\\runtime.c"
+PRISMIO_EXE = "..\\..\\cmake-build-release\\prismio.exe"
+CLANG = "..\\..\\external\\LLVM\\bin\\clang.exe"
+LLC   = "..\\..\\external\\LLVM\\bin\\llvm-llc.exe"
+RUNTIME_C = "..\\..\\runtime\\runtime.c"
 
 # --------------------------------------------------
 def run(cmd):
@@ -30,7 +30,7 @@ def cleanup_files(*files):
                 pass
 
 def main():
-    tests = sorted(Path(".").glob("*.psm"))
+    tests = sorted(Path(".").glob("test_*.psm"))
 
     if not tests:
         print("No test_*.psm files found.")
@@ -75,8 +75,8 @@ def main():
     # Path(obj).unlink(missing_ok=True)
     # Path(exe).unlink(missing_ok=True)
     # Path("runtime.obj").unlink(missing_ok=True)
-    # Cleanup (disabled for debugging)
-    # cleanup_files(ir, obj, exe)
+    # Cleanup
+    cleanup_files(ir, obj, exe)
 
 
 if __name__ == "__main__":

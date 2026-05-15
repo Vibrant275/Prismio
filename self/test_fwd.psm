@@ -1,0 +1,13 @@
+extern fn bar() -> Int
+
+fn foo() -> Int {
+    return bar()
+}
+
+fn bar() -> Int {
+    return 42
+}
+
+fn main() {
+    foo()
+}

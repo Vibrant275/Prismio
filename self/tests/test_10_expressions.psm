@@ -1,0 +1,23 @@
+fn eval_expression(x: Int, y: Int, z: Int) -> Int {
+    let result = x + y * z - x / y + z % x
+    return result
+}
+
+fn nested_expressions() -> Int {
+    let a = 5
+    let b = 10
+    let c = 15
+    
+    let result = (a + b) * (c - a) / (b - a)
+    return result
+}
+
+fn main() {
+    let result1 = eval_expression(10, 5, 3)
+    let result2 = nested_expressions()
+    println("Test 10: Complex Expressions")
+    println("eval_expression(10,5,3) expected: 26, got:")
+    println(result1)
+    println("nested_expressions() expected: 30, got:")
+    println(result2)
+}

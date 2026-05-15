@@ -1,0 +1,18 @@
+struct Node {
+    val: Int,
+    next: String // Use String as an opaque pointer
+}
+
+fn get_next_val(node: Node) -> Int {
+    return node.val
+}
+
+fn test() {
+    let n2 = Node { val: 42, next: "" }
+    // Pass n2 as a String to n1.next
+    let n1 = Node { val: 10, next: n2 }
+    
+    // Read n1.next, which is type String, but pass it to a function expecting Node
+    let next_node = n1.next
+    let v = get_next_val(next_node)
+}

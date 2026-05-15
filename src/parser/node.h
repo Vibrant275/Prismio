@@ -622,8 +622,7 @@ inline std::string getNodeTypeString(NodeType type)
     }
 }
 
-inline BinaryOp getBinaryOpFromToken(const std::string& op)
-{
+inline BinaryOp getBinaryOpFromToken(const std::string& op) {
     if (op == "+") return BinaryOp::ADD;
     if (op == "-") return BinaryOp::SUB;
     if (op == "*") return BinaryOp::MUL;

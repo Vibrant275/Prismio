@@ -1,0 +1,20 @@
+let x = 5
+let y = 10
+let mut z = 0
+
+fn test_arithmetic() -> Int {
+    let a = x + y
+    let b = x * y
+    let c = y - x
+    let d = y / x
+    let e = y % x
+    return a + b + c + d + e
+}
+
+fn main() {
+    let result = test_arithmetic()
+    println("Test 1: Variables and Arithmetic")
+    println("Expected: 72")
+    print("Got:")
+    println(result)
+}

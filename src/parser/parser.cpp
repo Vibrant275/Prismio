@@ -416,10 +416,45 @@ std::unique_ptr<Node> Parser::parseStatement() {
     }
 
     // Assignment or expression statement
-    // Look ahead to check for assignment
-    if (check(TokenType::IDENTIFIER) &&
-        (peek(1).type == TokenType::ASSIGNMENT_OPERATOR ||
-         peek(1).value == "=")) {
+    // We need to look ahead more carefully to detect assignments
+    // Save current position
+    size_t savedPosition = position;
+
+    // Try to parse as potential assignment target
+    bool isAssignment = false;
+    if (check(TokenType::IDENTIFIER)) {
+        advance(); // consume identifier
+
+        // Check for member access or array indexing chains
+        while (check(TokenType::SEPARATOR, ".") || check(TokenType::SEPARATOR, "[")) {
+            if (match(TokenType::SEPARATOR, ".")) {
+                if (check(TokenType::IDENTIFIER)) {
+                    advance();
+                } else {
+                    break;
+                }
+            } else if (match(TokenType::SEPARATOR, "[")) {
+                // Skip the index expression (simplified lookahead)
+                int bracketDepth = 1;
+                while (bracketDepth > 0 && position < tokens.size()) {
+                    if (check(TokenType::SEPARATOR, "[")) bracketDepth++;
+                    if (check(TokenType::SEPARATOR, "]")) bracketDepth--;
+                    advance();
+                }
+            }
+        }
+
+        // Now check if we have an assignment operator
+        if (check(TokenType::ASSIGNMENT_OPERATOR) ||
+            (check(TokenType::ARITHMETIC_OPERATOR) && peek(1).type == TokenType::ASSIGNMENT_OPERATOR)) {
+            isAssignment = true;
+        }
+    }
+
+    // Restore position
+    position = savedPosition;
+
+    if (isAssignment) {
         return parseAssignmentStatement();
     }
 
@@ -567,8 +602,30 @@ std::unique_ptr<Node> Parser::parseReturnStatement() {
 std::unique_ptr<Node> Parser::parseAssignmentStatement() {
     auto assignNode = std::make_unique<AssignmentStatementNode>();
 
-    // Target (identifier for now, can extend to member access)
-    assignNode->target = parsePrimary();
+    // Target - parse as expression to handle member access (obj.field)
+    // We need to handle: identifier, member access, array indexing
+    auto target = parsePrimary();
+
+    // Continue parsing member access or array indexing
+    while (check(TokenType::SEPARATOR, ".") || check(TokenType::SEPARATOR, "[")) {
+        if (match(TokenType::SEPARATOR, ".")) {
+            auto member = std::make_unique<MemberAccessExprNode>();
+            member->object = std::move(target);
+
+            expect(TokenType::IDENTIFIER, "member name");
+            member->member_name = tokens[position - 1].value;
+
+            target = std::move(member);
+        } else if (match(TokenType::SEPARATOR, "[")) {
+            auto index = std::make_unique<IndexExprNode>();
+            index->object = std::move(target);
+            index->index = parseExpression();
+            expect(TokenType::SEPARATOR, "]", "array index");
+            target = std::move(index);
+        }
+    }
+
+    assignNode->target = std::move(target);
 
     // Assignment operator
     std::string opValue = currentToken().value;
@@ -590,10 +647,12 @@ std::unique_ptr<Node> Parser::parseExpression(int precedence) {
 
     while (true) {
         // Check if current token is actually an operator
-        if (currentToken().type != TokenType::ARITHMETIC_OPERATOR &&
-            currentToken().type != TokenType::RELATIONAL_OPERATOR &&
-            currentToken().value != "and" &&
-            currentToken().value != "or") {
+        bool isOperator = (currentToken().type == TokenType::ARITHMETIC_OPERATOR ||
+                          currentToken().type == TokenType::RELATIONAL_OPERATOR ||
+                          currentToken().value == "and" ||
+                          currentToken().value == "or");
+
+        if (!isOperator) {
             break;
         }
 
@@ -816,11 +875,13 @@ std::unique_ptr<Node> Parser::parseTypeAnnotation() {
 // ==================================================
 
 int Parser::getOperatorPrecedence(const Token& token) {
-    // Don't treat keywords as operators
-    if (token.type == TokenType::KEYWORD) return 0;
-
+    // Handle 'and' and 'or' keywords
     if (token.value == "or") return 1;
     if (token.value == "and") return 2;
+
+    // Don't treat other keywords as operators
+    if (token.type == TokenType::KEYWORD) return 0;
+
     if (token.value == "==" || token.value == "!=") return 3;
     if (token.value == "<" || token.value == ">" ||
         token.value == "<=" || token.value == ">=") return 4;

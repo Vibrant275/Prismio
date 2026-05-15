@@ -1,0 +1,23 @@
+fn add3(a: Int, b: Int, c: Int) -> Int {
+    return a + b + c
+}
+
+fn add4(a: Int, b: Int, c: Int, d: Int) -> Int {
+    return a + b + c + d
+}
+
+fn add5(a: Int, b: Int, c: Int, d: Int, e: Int) -> Int {
+    return a + b + c + d + e
+}
+
+fn nested_calls(x: Int) -> Int {
+    let r1 = add3(x, x + 1, x + 2)
+    let r2 = add4(r1, x, x + 1, x + 2)
+    let r3 = add5(r2, x, x + 1, x + 2, x + 3)
+    return r3
+}
+
+fn main() {
+    let result = nested_calls(5)
+    println("Test 14: Multiple Arguments")
+}

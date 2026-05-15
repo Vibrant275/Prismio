@@ -89,6 +89,11 @@ void IRGenerator::generateImport(const ImportStatementNode* node) {
 }
 
 void IRGenerator::generateExternFunction(const ExternFunctionNode* node) {
+    // Skip if this extern function was already declared (duplicate from merged imports)
+    if (module->getFunction(node->name)) {
+        return;
+    }
+
     // Build parameter types using SmallVector
     llvm::SmallVector<llvm::Type*, 8> paramTypes;
     for (const auto& param : node->parameters) {
@@ -188,6 +193,13 @@ void IRGenerator::generateGlobalVariable(const VariableDeclNode* node) {
 }
 
 void IRGenerator::generateFunction(const FunctionNode* node) {
+    // Skip if a function with this name already has a body (duplicate from merged imports)
+    if (auto* existing = module->getFunction(node->name)) {
+        if (!existing->empty()) {
+            return;
+        }
+    }
+
     // Build parameter types using SmallVector
     llvm::SmallVector<llvm::Type*, 8> paramTypes;
     for (const auto& param : node->parameters) {
@@ -207,13 +219,16 @@ void IRGenerator::generateFunction(const FunctionNode* node) {
     // Create function type
     llvm::FunctionType* funcType = llvm::FunctionType::get(returnType, paramTypes, false);
 
-    // Create function
-    llvm::Function* function = llvm::Function::Create(
-        funcType,
-        llvm::Function::ExternalLinkage,
-        node->name,
-        module.get()
-    );
+    // Reuse existing declaration if present (e.g., from a previous extern), otherwise create new
+    llvm::Function* function = module->getFunction(node->name);
+    if (!function) {
+        function = llvm::Function::Create(
+            funcType,
+            llvm::Function::ExternalLinkage,
+            node->name,
+            module.get()
+        );
+    }
 
     // Set parameter names
     unsigned idx = 0;
@@ -269,6 +284,11 @@ void IRGenerator::generateFunction(const FunctionNode* node) {
 }
 
 void IRGenerator::generateStruct(const StructDeclNode* node) {
+    // Skip if this struct type already exists (duplicate from merged imports)
+    if (llvm::StructType::getTypeByName(*context, node->name)) {
+        return;
+    }
+
     // Build field types using SmallVector
     llvm::SmallVector<llvm::Type*, 8> fieldTypes;
     for (const auto& field : node->fields) {
@@ -284,16 +304,34 @@ void IRGenerator::generateStruct(const StructDeclNode* node) {
     if (!scopes.empty()) {
         scopes.back().namedTypes[node->name] = structType;
     }
+
+    // Store field name -> index mapping
+    std::map<std::string, int> fieldMap;
+    for (int i = 0; i < (int)node->fields.size(); i++) {
+        fieldMap[node->fields[i].name] = i;
+    }
+    structFieldIndices[node->name] = fieldMap;
 }
 
 void IRGenerator::generateEnum(const EnumDeclNode* node) {
+    // Skip if this enum type already exists (duplicate from merged imports)
+    if (!scopes.empty() && scopes.back().namedTypes.count(node->name)) {
+        return;
+    }
+
     // Enums are represented as i32 (tag) for now
-    // Later we can add support for associated values
     llvm::Type* enumType = llvm::Type::getInt32Ty(*context);
 
     if (!scopes.empty()) {
         scopes.back().namedTypes[node->name] = enumType;
     }
+
+    // Store variant name -> index mapping
+    std::map<std::string, int> variantMap;
+    for (int i = 0; i < (int)node->variants.size(); i++) {
+        variantMap[node->variants[i].name] = i;
+    }
+    enumVariants[node->name] = variantMap;
 }
 
 void IRGenerator::generateTrait(const TraitDeclNode* node) {
@@ -537,18 +575,75 @@ llvm::Value* IRGenerator::generateVariableDecl(const VariableDeclNode* node) {
 llvm::Value* IRGenerator::generateAssignmentStatement(const AssignmentStatementNode* node) {
     llvm::Value* value = generateExpression(node->value.get());
 
-    // Get the variable
-    auto* identNode = dynamic_cast<IdentifierExprNode*>(node->target.get());
-    if (identNode) {
+    // Handle different target types
+    if (auto* identNode = dynamic_cast<IdentifierExprNode*>(node->target.get())) {
+        // Simple variable assignment
         llvm::AllocaInst* variable = getVariable(identNode->name);
         if (!variable) {
             std::cerr << "Unknown variable: " << identNode->name << std::endl;
             return nullptr;
         }
-
         return builder->CreateStore(value, variable);
     }
+    else if (auto* memberNode = dynamic_cast<MemberAccessExprNode*>(node->target.get())) {
+        // Member access assignment (obj.field = value)
+        auto* objIdent = dynamic_cast<IdentifierExprNode*>(memberNode->object.get());
+        if (!objIdent) {
+            std::cerr << "Error: Member assignment target must be an identifier" << std::endl;
+            return nullptr;
+        }
 
+        // Load the struct pointer from the variable
+        llvm::AllocaInst* variable = getVariable(objIdent->name);
+        if (!variable) {
+            std::cerr << "Unknown variable: " << objIdent->name << std::endl;
+            return nullptr;
+        }
+        llvm::Value* structPtr = builder->CreateLoad(variable->getAllocatedType(), variable, "structptr");
+
+        // Find the struct type and field index
+        llvm::StructType* structType = nullptr;
+        int fieldIndex = -1;
+        for (auto& [sname, fieldMap] : structFieldIndices) {
+            auto it = fieldMap.find(memberNode->member_name);
+            if (it != fieldMap.end()) {
+                structType = lookupStructType(sname);
+                fieldIndex = it->second;
+                break;
+            }
+        }
+
+        if (!structType || fieldIndex < 0) {
+            std::cerr << "Unknown struct field: " << memberNode->member_name << std::endl;
+            return nullptr;
+        }
+
+        // GEP to the field and store
+        llvm::Value* fieldPtr = builder->CreateStructGEP(structType, structPtr, fieldIndex, "fieldptr");
+        return builder->CreateStore(value, fieldPtr);
+    }
+    else if (auto* indexNode = dynamic_cast<IndexExprNode*>(node->target.get())) {
+        // Array index assignment (arr[i] = value)
+        llvm::Value* arrayValue = generateExpression(indexNode->object.get());
+        llvm::Value* indexValue = generateExpression(indexNode->index.get());
+
+        if (!arrayValue || !indexValue) {
+            return nullptr;
+        }
+
+        // Get element pointer
+        llvm::Type* elemType = llvm::Type::getInt32Ty(*context);
+        llvm::Value* elemPtr = builder->CreateGEP(
+            elemType,
+            arrayValue,
+            indexValue,
+            "index_ptr"
+        );
+
+        return builder->CreateStore(value, elemPtr);
+    }
+
+    std::cerr << "Unsupported assignment target type" << std::endl;
     return nullptr;
 }
 
@@ -798,8 +893,10 @@ llvm::Value* IRGenerator::generateExpression(const Node* node) {
         );
         case NodeType::MEMBER_ACCESS_EXPR:
             return generateMemberAccessExpr(dynamic_cast<const MemberAccessExprNode*>(node));
+    case NodeType::STRUCT_LITERAL_EXPR:
+        return generateStructLiteral(dynamic_cast<const StructLiteralExprNode*>(node));
         default:
-            std::cerr << "Unknown expression type" << std::endl;
+            std::cerr << "Unknown expression type: " << getNodeTypeString(node->type) << std::endl;
             return nullptr;
     }
 }
@@ -811,31 +908,35 @@ llvm::Value* IRGenerator::generateBinaryExpr(const BinaryExprNode* node) {
     if (!left || !right) return nullptr;
 
     switch (node->op) {
-        case BinaryOp::ADD:
-            return builder->CreateAdd(left, right, "addtmp");
-        case BinaryOp::SUB:
-            return builder->CreateSub(left, right, "subtmp");
-        case BinaryOp::MUL:
-            return builder->CreateMul(left, right, "multmp");
-        case BinaryOp::DIV:
-            return builder->CreateSDiv(left, right, "divtmp");
-        case BinaryOp::MOD:
-            return builder->CreateSRem(left, right, "modtmp");
-        case BinaryOp::EQ:
-            return builder->CreateICmpEQ(left, right, "eqtmp");
-        case BinaryOp::NEQ:
-            return builder->CreateICmpNE(left, right, "neqtmp");
-        case BinaryOp::LT:
-            return builder->CreateICmpSLT(left, right, "lttmp");
-        case BinaryOp::GT:
-            return builder->CreateICmpSGT(left, right, "gttmp");
-        case BinaryOp::LTE:
-            return builder->CreateICmpSLE(left, right, "letmp");
-        case BinaryOp::GTE:
-            return builder->CreateICmpSGE(left, right, "getmp");
-        default:
-            std::cerr << "Unknown binary operator" << std::endl;
-            return nullptr;
+    case BinaryOp::ADD:
+        return builder->CreateAdd(left, right, "addtmp");
+    case BinaryOp::SUB:
+        return builder->CreateSub(left, right, "subtmp");
+    case BinaryOp::MUL:
+        return builder->CreateMul(left, right, "multmp");
+    case BinaryOp::DIV:
+        return builder->CreateSDiv(left, right, "divtmp");
+    case BinaryOp::MOD:
+        return builder->CreateSRem(left, right, "modtmp");
+    case BinaryOp::EQ:
+        return builder->CreateICmpEQ(left, right, "eqtmp");
+    case BinaryOp::NEQ:
+        return builder->CreateICmpNE(left, right, "neqtmp");
+    case BinaryOp::LT:
+        return builder->CreateICmpSLT(left, right, "lttmp");
+    case BinaryOp::GT:
+        return builder->CreateICmpSGT(left, right, "gttmp");
+    case BinaryOp::LTE:
+        return builder->CreateICmpSLE(left, right, "letmp");
+    case BinaryOp::GTE:
+        return builder->CreateICmpSGE(left, right, "getmp");
+    case BinaryOp::AND:
+        return builder->CreateAnd(left, right, "andtmp");
+    case BinaryOp::OR:
+        return builder->CreateOr(left, right, "ortmp");
+    default:
+        std::cerr << "Unknown binary operator" << std::endl;
+        return nullptr;
     }
 }
 
@@ -917,6 +1018,26 @@ llvm::Value* IRGenerator::generateCallExpr(const CallExprNode* node) {
     }
 
     std::string functionName = calleeNode->name;
+
+    // Handle println/print with no arguments - just print empty string (newline)
+    if ((functionName == "println" || functionName == "print") && node->arguments.empty()) {
+        llvm::Function* calleeFunc = module->getFunction(functionName);
+        if (!calleeFunc) {
+            std::cerr << "Unknown function: " << functionName << std::endl;
+            return nullptr;
+        }
+        // Pass empty string
+        llvm::Constant* emptyStr = llvm::ConstantDataArray::getString(*context, "", true);
+        llvm::GlobalVariable* strGlobal = new llvm::GlobalVariable(
+            *module, emptyStr->getType(), true,
+            llvm::GlobalValue::PrivateLinkage, emptyStr, ".str.empty"
+        );
+        strGlobal->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+        llvm::Value* strPtr = builder->CreatePointerCast(
+            strGlobal, llvm::PointerType::get(llvm::Type::getInt8Ty(*context), 0)
+        );
+        return builder->CreateCall(calleeFunc, {strPtr});
+    }
 
     // Handle print/println overloading based on argument type
     if ((functionName == "println" || functionName == "print") && node->arguments.size() == 1) {
@@ -1022,8 +1143,136 @@ llvm::Value* IRGenerator::generateCallExpr(const CallExprNode* node) {
 }
 
 llvm::Value* IRGenerator::generateMemberAccessExpr(const MemberAccessExprNode* node) {
-    // TODO: Implement struct member access
-    return nullptr;
+    // Case 1: Enum variant access (e.g., TokenType.EOF)
+    auto* identNode = dynamic_cast<const IdentifierExprNode*>(node->object.get());
+    if (identNode) {
+        auto enumIt = enumVariants.find(identNode->name);
+        if (enumIt != enumVariants.end()) {
+            auto variantIt = enumIt->second.find(node->member_name);
+            if (variantIt != enumIt->second.end()) {
+                return llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), variantIt->second);
+            }
+            std::cerr << "Unknown enum variant: " << identNode->name << "." << node->member_name << std::endl;
+            return nullptr;
+        }
+    }
+
+    // Case 2: Struct field access (e.g., lex.pos)
+    // Generate the object expression to get the struct pointer
+    llvm::Value* objValue = nullptr;
+    std::string varName;
+
+    if (identNode) {
+        varName = identNode->name;
+        // Load the struct pointer from the variable's alloca
+        llvm::AllocaInst* variable = getVariable(varName);
+        if (!variable) {
+            std::cerr << "Unknown variable in member access: " << varName << std::endl;
+            return nullptr;
+        }
+        objValue = builder->CreateLoad(variable->getAllocatedType(), variable, "structptr");
+    } else {
+        objValue = generateExpression(node->object.get());
+    }
+
+    if (!objValue) {
+        std::cerr << "Failed to generate object for member access" << std::endl;
+        return nullptr;
+    }
+
+    // Find the struct type and field index by searching all known structs
+    llvm::StructType* structType = nullptr;
+    int fieldIndex = -1;
+    for (auto& [sname, fieldMap] : structFieldIndices) {
+        auto it = fieldMap.find(node->member_name);
+        if (it != fieldMap.end()) {
+            structType = lookupStructType(sname);
+            fieldIndex = it->second;
+            break;
+        }
+    }
+
+    if (!structType || fieldIndex < 0) {
+        std::cerr << "Unknown struct field: " << node->member_name << std::endl;
+        return nullptr;
+    }
+
+    // GEP to the field
+    llvm::Value* fieldPtr = builder->CreateStructGEP(structType, objValue, fieldIndex, node->member_name + "_ptr");
+
+    // Load and return the field value
+    llvm::Type* fieldType = structType->getElementType(fieldIndex);
+    return builder->CreateLoad(fieldType, fieldPtr, node->member_name);
+}
+
+llvm::StructType* IRGenerator::lookupStructType(const std::string& name) {
+    return llvm::StructType::getTypeByName(*context, name);
+}
+
+llvm::Value* IRGenerator::generateStructLiteral(const StructLiteralExprNode* node) {
+    // Look up the LLVM struct type
+    llvm::StructType* structType = lookupStructType(node->struct_name);
+    if (!structType) {
+        std::cerr << "Unknown struct type: " << node->struct_name << std::endl;
+        return nullptr;
+    }
+
+    // Heap-allocate the struct using malloc (so pointers survive function returns)
+    llvm::Function* mallocFn = module->getFunction("malloc");
+    if (!mallocFn) {
+        std::cerr << "malloc not declared" << std::endl;
+        return nullptr;
+    }
+
+    // Compute struct size using GEP-null trick
+    llvm::Value* nullPtr = llvm::ConstantPointerNull::get(llvm::PointerType::get(structType, 0));
+    llvm::Value* sizeGEP = builder->CreateConstGEP1_32(structType, nullPtr, 1, "sizeptr");
+    llvm::Value* structSize = builder->CreatePtrToInt(sizeGEP, llvm::Type::getInt64Ty(*context), "structsize");
+
+    // Call malloc
+    llvm::Value* rawPtr = builder->CreateCall(mallocFn, {structSize}, "structmem");
+
+    // Get field index mapping
+    auto fieldMapIt = structFieldIndices.find(node->struct_name);
+    if (fieldMapIt == structFieldIndices.end()) {
+        std::cerr << "No field mapping for struct: " << node->struct_name << std::endl;
+        return nullptr;
+    }
+
+    // Fill each field
+    for (const auto& [fieldName, valueNode] : node->field_values) {
+        auto indexIt = fieldMapIt->second.find(fieldName);
+        if (indexIt == fieldMapIt->second.end()) {
+            std::cerr << "Unknown field " << fieldName << " in struct " << node->struct_name << std::endl;
+            return nullptr;
+        }
+
+        int fieldIdx = indexIt->second;
+        llvm::Value* fieldValue = generateExpression(valueNode.get());
+        if (!fieldValue) {
+            std::cerr << "Failed to generate value for field " << fieldName << std::endl;
+            return nullptr;
+        }
+
+        // Type coerce if needed (e.g., i1 to i32 for enum fields)
+        llvm::Type* expectedType = structType->getElementType(fieldIdx);
+        if (fieldValue->getType() != expectedType) {
+            if (expectedType->isIntegerTy() && fieldValue->getType()->isIntegerTy()) {
+                unsigned expectedBits = expectedType->getIntegerBitWidth();
+                unsigned actualBits = fieldValue->getType()->getIntegerBitWidth();
+                if (expectedBits > actualBits) {
+                    fieldValue = builder->CreateZExt(fieldValue, expectedType);
+                } else if (expectedBits < actualBits) {
+                    fieldValue = builder->CreateTrunc(fieldValue, expectedType);
+                }
+            }
+        }
+
+        llvm::Value* fieldPtr = builder->CreateStructGEP(structType, rawPtr, fieldIdx, fieldName + "_ptr");
+        builder->CreateStore(fieldValue, fieldPtr);
+    }
+
+    return rawPtr;
 }
 
 llvm::Type* IRGenerator::convertType(const TypeAnnotationNode* typeNode) {
@@ -1052,6 +1301,10 @@ llvm::Type* IRGenerator::convertType(const TypeAnnotationNode* typeNode) {
     for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
         auto found = it->namedTypes.find(typeNode->type_name);
         if (found != it->namedTypes.end()) {
+            // Struct types are always passed/stored as pointers
+            if (llvm::dyn_cast<llvm::StructType>(found->second)) {
+                return llvm::PointerType::get(found->second, 0);
+            }
             return found->second;
         }
     }
@@ -1071,6 +1324,13 @@ void IRGenerator::declareBuiltins() {
     llvm::Type* int32Type = llvm::Type::getInt32Ty(*context);
     llvm::Type* int8Type = llvm::Type::getInt8Ty(*context);
     llvm::Type* voidType = llvm::Type::getVoidTy(*context);
+    llvm::Type* int64Type = llvm::Type::getInt64Ty(*context);
+
+    // Declare malloc for struct heap allocation
+    {
+        llvm::FunctionType* mallocType = llvm::FunctionType::get(int8PtrType, {int64Type}, false);
+        llvm::Function::Create(mallocType, llvm::Function::ExternalLinkage, "malloc", module.get());
+    }
 
     // Declare printf
     llvm::SmallVector<llvm::Type*, 1> printfArgs;

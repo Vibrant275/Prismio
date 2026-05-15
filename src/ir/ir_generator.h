@@ -48,6 +48,12 @@ private:
 
     std::vector<Scope> scopes;
 
+    // Enum variant mappings: enumName -> {variantName -> index}
+    std::map<std::string, std::map<std::string, int>> enumVariants;
+
+    // Struct field mappings: structName -> {fieldName -> index}
+    std::map<std::string, std::map<std::string, int>> structFieldIndices;
+
     // Current function being generated
     llvm::Function* currentFunction = nullptr;
 
@@ -79,6 +85,7 @@ private:
     llvm::Value* generateAssignmentStatement(const AssignmentStatementNode* node);
     llvm::Value* generateExpressionStatement(const ExpressionStatementNode* node);
     llvm::Value* generateArrayLiteral(const ArrayLiteralExprNode* node);
+    llvm::Value* generateStructLiteral(const StructLiteralExprNode* node);
 
     llvm::Value* generateIndexExpr(const IndexExprNode* node);
     // Expression generation
@@ -89,6 +96,9 @@ private:
     llvm::Value* generateIdentifierExpr(const IdentifierExprNode* node);
     llvm::Value* generateCallExpr(const CallExprNode* node);
     llvm::Value* generateMemberAccessExpr(const MemberAccessExprNode* node);
+
+    // Struct helpers
+    llvm::StructType* lookupStructType(const std::string& name);
 
     // Type conversion
     llvm::Type* convertType(const TypeAnnotationNode* typeNode);

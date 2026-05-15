@@ -28,7 +28,8 @@ enum TokenType {
 struct Token {
     type: TokenType,
     value: String,
-    line: Int
+    line: Int,
+    tok_next: String // Pointer to next Token
 }
 
 fn type_to_string(t: TokenType) -> String {

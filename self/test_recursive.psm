@@ -1,0 +1,6 @@
+struct Node {
+    next: Node
+}
+fn main() {
+    let x = Node { next: 0 }
+}

@@ -1,0 +1,7 @@
+extern fn alloc_array(size: Int) -> [Int]
+
+fn test() {
+    let arr = alloc_array(100)
+    arr[0] = 5
+    let x = arr[0]
+}

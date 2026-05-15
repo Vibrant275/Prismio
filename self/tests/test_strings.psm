@@ -1,0 +1,94 @@
+extern fn str_equals(s1: String, s2: String) -> Int
+extern fn str_length(s: String) -> Int
+extern fn str_concat(s1: String, s2: String) -> String
+extern fn str_substring(s: String, start: Int, length: Int) -> String
+extern fn str_char_at(s: String, index: Int) -> Char
+extern fn str_contains(haystack: String, needle: String) -> Int
+extern fn str_starts_with(s: String, prefix: String) -> Int
+extern fn str_index_of(haystack: String, needle: String) -> Int
+extern fn int_to_str(n: Int) -> String
+extern fn str_to_int(s: String) -> Int
+
+fn test_string_comparison() {
+    let s1 = "hello"
+    let s2 = "hello"
+    let s3 = "world"
+
+    if (str_equals(s1, s2) == 1) {
+        println("s1 equals s2")
+    }
+
+    if (str_equals(s1, s3) == 0) {
+        println("s1 does not equal s3")
+    }
+}
+
+fn test_string_operations() {
+    let text = "Hello, World!"
+
+    let len = str_length(text)
+    println("Length:")
+    println_int(len)
+
+    let sub = str_substring(text, 0, 5)
+    println(sub)
+
+    let ch = str_char_at(text, 7)
+    println_char(ch)
+
+    if (str_contains(text, "World") == 1) {
+        println("Contains 'World'")
+    }
+
+    if (str_starts_with(text, "Hello") == 1) {
+        println("Starts with 'Hello'")
+    }
+
+    let pos = str_index_of(text, "World")
+    println("Index of 'World':")
+    println_int(pos)
+}
+
+fn test_string_concat() {
+    let first = "Hello"
+    let second = " f "
+    let third = "World"
+
+    let temp = str_concat(first, second)
+    let result = str_concat(temp, third)
+
+    println(result)
+}
+
+fn test_conversions() {
+    let num = 42
+    let str = int_to_str(num)
+    println(str)
+
+    let text = "123"
+    let value = str_to_int(text)
+    println_int(value)
+}
+
+fn main() {
+    test_string_comparison()
+    test_string_operations()
+    test_string_concat()
+    test_conversions()
+}
+
+// === Program Output ===
+
+//   s1 equals s2
+//   s1 does not equal s3
+//  Length:
+//   13
+//   Hello
+//   W
+//   Contains 'World'
+//   Starts with 'Hello'
+//   Index of 'World':
+//   7
+//   Hello World
+//   42
+//   123
