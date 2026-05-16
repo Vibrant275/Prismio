@@ -147,12 +147,45 @@ fn parse_expression(p: Parser, precedence: Int) -> ASTNode {
 fn parse_primary(p: Parser) -> ASTNode {
     let curr = parser_current(p)
     
-    if (curr.type == TokenType.NUMBER_LITERAL or curr.type == TokenType.STRING_LITERAL or curr.type == TokenType.BOOL_LITERAL) {
+    if (curr.type == TokenType.NUMBER_LITERAL or curr.type == TokenType.STRING_LITERAL or curr.type == TokenType.BOOL_LITERAL or curr.type == TokenType.CHAR_LITERAL) {
         let lit = create_node(NodeKind.LITERAL_EXPR)
         lit.i1 = curr.type // literal type
         lit.s1 = curr.value
         parser_advance(p)
         return lit
+    }
+    
+    if (curr.type == TokenType.IDENTIFIER) {
+        let next_tok = parser_peek(p)
+        if (next_tok.type == TokenType.SEPARATOR and str_equals(next_tok.value, "{") == 1) {
+            let struct_lit = create_node(NodeKind.STRUCT_LITERAL_EXPR)
+            struct_lit.s1 = curr.value
+            parser_advance(p)
+            parser_expect_val(p, TokenType.SEPARATOR, "{", "struct literal")
+            
+            let last_field = ""
+            while (parser_check_val(p, TokenType.SEPARATOR, "}") == false) {
+                let field = create_node(NodeKind.STRUCT_FIELD)
+                let field_tok = parser_current(p)
+                field.s1 = field_tok.value
+                parser_expect(p, TokenType.IDENTIFIER, "struct literal field")
+                parser_expect_val(p, TokenType.SEPARATOR, ":", "struct literal")
+                field.child1 = node_to_ptr(parse_expression(p, 0))
+                
+                if (str_equals(struct_lit.child1, "") == 1) {
+                    struct_lit.child1 = node_to_ptr(field)
+                } else {
+                    let last = ptr_to_node(last_field)
+                    last.next = node_to_ptr(field)
+                }
+                last_field = node_to_ptr(field)
+                
+                parser_match_val(p, TokenType.SEPARATOR, ",")
+            }
+            
+            parser_expect_val(p, TokenType.SEPARATOR, "}", "struct literal")
+            return struct_lit
+        }
     }
     
     if (curr.type == TokenType.IDENTIFIER) {
@@ -210,6 +243,39 @@ fn parse_primary(p: Parser) -> ASTNode {
         }
         
         return expr
+    }
+    if (parser_match_val(p, TokenType.SEPARATOR, "(")) {
+        let expr_inner = parse_expression(p, 0)
+        parser_expect_val(p, TokenType.SEPARATOR, ")", "parenthesized expression")
+        return expr_inner
+    }
+    
+    // Array literals
+    if (parser_match_val(p, TokenType.SEPARATOR, "[")) {
+        let array_lit = create_node(NodeKind.ARRAY_LITERAL_EXPR)
+        
+        let last_elem = ""
+        if (parser_check_val(p, TokenType.SEPARATOR, "]") == false) {
+            let is_looping = true
+            while (is_looping) {
+                let elem = parse_expression(p, 0)
+                
+                if (str_equals(array_lit.child1, "") == 1) {
+                    array_lit.child1 = node_to_ptr(elem)
+                } else {
+                    let last = ptr_to_node(last_elem)
+                    last.next = node_to_ptr(elem)
+                }
+                last_elem = node_to_ptr(elem)
+                
+                if (parser_match_val(p, TokenType.SEPARATOR, ",") == false) {
+                    is_looping = false
+                }
+            }
+        }
+        
+        parser_expect_val(p, TokenType.SEPARATOR, "]", "array literal")
+        return array_lit
     }
     
     print("Unexpected token in expression: ")

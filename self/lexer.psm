@@ -122,6 +122,31 @@ fn lexer_next_token(lex: Lexer) -> Token {
         return Token { type: TokenType.STRING_LITERAL, value: value, line: lex.line, tok_next: "" }
     }
 
+    // Character Literal
+    if (c == '\'') {
+        lexer_advance(lex) // Skip opening quote
+        let value_char = lexer_current(lex)
+        
+        if (value_char == '\\') {
+            lexer_advance(lex)
+            let esc = lexer_current(lex)
+            if (esc == 'n') { value_char = '\n' }
+            if (esc == 't') { value_char = '\t' }
+            if (esc == 'r') { value_char = '\r' }
+            if (esc == '0') { value_char = '\0' }
+            if (esc == '\\') { value_char = '\\' }
+            if (esc == '\'') { value_char = '\'' }
+            if (esc == '"') { value_char = '"' }
+        }
+        
+        lexer_advance(lex)
+        if (lexer_current(lex) == '\'') {
+            lexer_advance(lex)
+        }
+        
+        return Token { type: TokenType.CHAR_LITERAL, value: int_to_str(char_code(value_char)), line: lex.line, tok_next: "" }
+    }
+
     // Operators
     if (is_operator(c)) {
         let start = lex.pos

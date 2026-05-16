@@ -7,35 +7,6 @@ import bridge
 import ir
 
 extern fn read_file(path: String) -> String
-extern fn get_directory(path: String) -> String
-extern fn cli_arg_count() -> Int
-extern fn cli_arg(index: Int) -> String
-
-fn is_named_top_level(stmt: ASTNode) -> Bool {
-    if (stmt.kind == NodeKind.EXTERN_FUNCTION) { return true }
-    if (stmt.kind == NodeKind.VARIABLE_DECL) { return true }
-    if (stmt.kind == NodeKind.FUNCTION) { return true }
-    if (stmt.kind == NodeKind.STRUCT_DECL) { return true }
-    if (stmt.kind == NodeKind.ENUM_DECL) { return true }
-    return false
-}
-
-fn has_named_top_level(module: ASTNode, stmt: ASTNode) -> Bool {
-    if (is_named_top_level(stmt) == false) {
-        return false
-    }
-
-    let scan_ptr = module.child1
-    while (str_equals(scan_ptr, "") == 0) {
-        let scan = ptr_to_node(scan_ptr)
-        if (scan.kind == stmt.kind and str_equals(scan.s1, stmt.s1) == 1) {
-            return true
-        }
-        scan_ptr = scan.next
-    }
-
-    return false
-}
 
 fn parse_source(content: String) -> ASTNode {
     let lex = create_lexer(content)
@@ -45,10 +16,6 @@ fn parse_source(content: String) -> ASTNode {
 }
 
 fn append_statement(module: ASTNode, stmt: ASTNode) {
-    if (has_named_top_level(module, stmt)) {
-        return
-    }
-
     if (str_equals(module.child1, "") == 1) {
         module.child1 = node_to_ptr(stmt)
         return
@@ -80,15 +47,7 @@ fn append_non_imports(target: ASTNode, source: ASTNode) {
     }
 }
 
-fn join_import_path(base_dir: String, module_name: String) -> String {
-    let module_file = str_concat(module_name, ".psm")
-    if (str_equals(base_dir, ".") == 1) {
-        return module_file
-    }
-    return str_concat(str_concat(base_dir, "\\"), module_file)
-}
-
-fn resolve_imports(module: ASTNode, base_dir: String) -> ASTNode {
+fn resolve_imports(module: ASTNode) -> ASTNode {
     let merged = create_node(NodeKind.MODULE)
 
     let stmt_ptr = module.child1
@@ -98,7 +57,7 @@ fn resolve_imports(module: ASTNode, base_dir: String) -> ASTNode {
         stmt.next = ""
 
         if (stmt.kind == NodeKind.IMPORT_STATEMENT) {
-            let import_path = join_import_path(base_dir, stmt.s1)
+            let import_path = str_concat(stmt.s1, ".psm")
             let import_content = read_file(import_path)
             if (str_equals(import_content, "") == 1) {
                 print("ERROR: Could not import ")
@@ -106,7 +65,7 @@ fn resolve_imports(module: ASTNode, base_dir: String) -> ASTNode {
                 exit(1)
             }
             let imported_module = parse_source(import_content)
-            let resolved_import = resolve_imports(imported_module, base_dir)
+            let resolved_import = resolve_imports(imported_module)
             append_non_imports(merged, resolved_import)
         } else {
             append_statement(merged, stmt)
@@ -119,17 +78,9 @@ fn resolve_imports(module: ASTNode, base_dir: String) -> ASTNode {
 }
 
 fn main() -> Int {
-    println("=== Self-Hosted Compiler ===")
+    println("=== Self-Hosted Compiler Test ===")
 
-    let path = ""
-    let out_file = "out.ll"
-    if (cli_arg_count() > 1) {
-        path = cli_arg(1)
-    }
-    if (cli_arg_count() > 2) {
-        out_file = cli_arg(2)
-    }
-    
+    let path = "test_control_flow.psm"
     let content = read_file(path)
 
     if (str_equals(content, "") == 1) {
@@ -148,8 +99,7 @@ fn main() -> Int {
     let ast_root = parse_module(p)
     println("✓ Parsing complete")
     
-    let base_dir = get_directory(path)
-    let merged_ast = resolve_imports(ast_root, base_dir)
+    let merged_ast = resolve_imports(ast_root)
     
     // Generate IR
     println("Generating IR...")
@@ -160,6 +110,7 @@ fn main() -> Int {
     ir_print()
     
     // Write to file
+    let out_file = "out.ll"
     ir_write_file(out_file)
     print("✓ IR written to ")
     println(out_file)

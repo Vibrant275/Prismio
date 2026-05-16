@@ -165,6 +165,23 @@ void IRGenerator::generateGlobalVariable(const VariableDeclNode* node) {
                 initializer = llvm::ConstantInt::get(varType, std::stoi(litNode->value));
             } else if (litNode->literal_type == TokenType::BOOL_LITERAL) {
                 initializer = llvm::ConstantInt::get(varType, litNode->value == "true" ? 1 : 0);
+            } else if (litNode->literal_type == TokenType::STRING_LITERAL) {
+                // Create a global constant string and use a pointer to it as initializer
+                llvm::Constant* strConstant = llvm::ConstantDataArray::getString(*context, litNode->value, true);
+                auto* strGlobal = new llvm::GlobalVariable(
+                    *module,
+                    strConstant->getType(),
+                    true, // isConstant
+                    llvm::GlobalValue::PrivateLinkage,
+                    strConstant,
+                    node->name + ".str"
+                );
+                strGlobal->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+                // Get a pointer to the first element
+                llvm::Constant* zero = llvm::ConstantInt::get(llvm::Type::getInt64Ty(*context), 0);
+                llvm::Constant* indices[] = { zero, zero };
+                initializer = llvm::ConstantExpr::getGetElementPtr(
+                    strConstant->getType(), strGlobal, indices, true);
             } else {
                 initializer = llvm::Constant::getNullValue(varType);
             }
@@ -178,7 +195,7 @@ void IRGenerator::generateGlobalVariable(const VariableDeclNode* node) {
     auto* globalVar = new llvm::GlobalVariable(
         *module,
         varType,
-        !node->is_mutable, // isConstant
+        false, // isConstant - globals are always mutable in Prismio
         llvm::GlobalValue::ExternalLinkage,
         initializer,
         node->name

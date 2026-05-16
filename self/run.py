@@ -6,7 +6,8 @@ from pathlib import Path
 # --------------------------------------------------
 # HARDCODED PATHS (as requested)
 # --------------------------------------------------
-PRISMIO_EXE = "..\\cmake-build-release\\prismio.exe"
+# PRISMIO_EXE = "..\\cmake-build-release\\prismio.exe"
+PRISMIO_EXE = "main.exe"
 CLANG = "..\\external\\LLVM\\bin\\clang.exe"
 LLC   = "..\\external\\LLVM\\bin\\llvm-llc.exe"
 RUNTIME_C = "..\\runtime\\runtime.c"
@@ -59,12 +60,16 @@ def main():
 
     # 2. Compile runtime (always)
     run([CLANG, "-c", RUNTIME_C, "-o", "runtime.obj"])
+    
+    # 2.5 Compile llvm-bridge.c
+    bridge_c = str(Path("../runtime/llvm-bridge.c").resolve())
+    run([CLANG, "-c", bridge_c, "-o", "bridge.obj"])
 
     # 3. LLVM IR → object
     run([LLC, ir, "-filetype=obj", "-o", obj])
 
     # 4. Link
-    run([CLANG, obj, "runtime.obj", "-o", exe])
+    run([CLANG, obj, "runtime.obj", "bridge.obj", "-o", exe])
 
     # 5. Run
     print("\n=== Program Output ===\n")

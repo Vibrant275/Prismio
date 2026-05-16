@@ -6,7 +6,8 @@ from pathlib import Path
 # --------------------------------------------------
 # HARDCODED PATHS (as requested)
 # --------------------------------------------------
-PRISMIO_EXE = "..\\..\\cmake-build-release\\prismio.exe"
+PRISMIO_EXE = "..\\main.exe"
+# PRISMIO_EXE = "..\\..\\cmake-build-release\\prismio.exe"
 CLANG = "..\\..\\external\\LLVM\\bin\\clang.exe"
 LLC   = "..\\..\\external\\LLVM\\bin\\llvm-llc.exe"
 RUNTIME_C = "..\\..\\runtime\\runtime.c"

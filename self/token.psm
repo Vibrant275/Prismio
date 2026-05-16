@@ -34,6 +34,7 @@ struct Token {
 
 fn type_to_string(t: TokenType) -> String {
     if (t == TokenType.STRING_LITERAL) { return "STRING" }
+    if (t == TokenType.CHAR_LITERAL) { return "CHAR" }
     if (t == TokenType.NUMBER_LITERAL) { return "NUMBER" }
     if (t == TokenType.BOOL_LITERAL) { return "BOOL" }
     if (t == TokenType.IDENTIFIER) { return "IDENTIFIER" }

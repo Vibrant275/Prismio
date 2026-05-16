@@ -2,44 +2,57 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _WIN32
+extern int __argc;
+extern char** __argv;
+#endif
+
 // Println function - prints a string and adds a newline
 void println(const char* str) {
     printf("%s\n", str);
+    fflush(stdout);
 }
 
 // Print function - prints a string without newline
 void print(const char* str) {
     printf("%s", str);
+    fflush(stdout);
 }
 
 // Print integer
 void print_int(int value) {
     printf("%d", value);
+    fflush(stdout);
 }
 
 // Print integer with newline
 void println_int(int value) {
     printf("%d\n", value);
+    fflush(stdout);
 }
 
 // Print boolean
 void print_bool(int value) {
     printf("%s", value ? "true" : "false");
+    fflush(stdout);
 }
 
 // Print boolean with newline
 void println_bool(int value) {
     printf("%s\n", value ? "true" : "false");
+    fflush(stdout);
 }
 
 // Print character
 void print_char(char c) {
     printf("%c", c);
+    fflush(stdout);
 }
 
 // Print character with newline
 void println_char(char c) {
     printf("%c\n", c);
+    fflush(stdout);
 }
 
 // Array structure
@@ -414,6 +427,25 @@ char* get_directory(const char* path) {
     result[len] = '\0';
 
     return result;
+}
+
+int cli_arg_count() {
+#ifdef _WIN32
+    return __argc;
+#else
+    return 0;
+#endif
+}
+
+char* cli_arg(int index) {
+#ifdef _WIN32
+    if (index < 0 || index >= __argc) {
+        return "";
+    }
+    return __argv[index];
+#else
+    return "";
+#endif
 }
 
 // Helpers for type punning ASTNode pointers in Prismio
